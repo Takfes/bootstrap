@@ -231,7 +231,7 @@ class BootstrapApp(App):
         self._components = components
         self._state = state
         self._project_name = project_name
-        self._context: dict[str, str] | None = None
+        self._template_ctx: dict[str, str] | None = None
         super().__init__()
 
     def on_mount(self) -> None:
@@ -254,7 +254,7 @@ class BootstrapApp(App):
         if context is None:
             self.exit(None)
             return
-        self._context = context
+        self._template_ctx = context
         self.push_screen(
             ComponentSelectScreen(
                 self._components,
@@ -265,10 +265,10 @@ class BootstrapApp(App):
         )
 
     def _on_components_done_new(self, selected: list[str] | None) -> None:
-        if selected is None or self._context is None:
+        if selected is None or self._template_ctx is None:
             self.exit(None)
         else:
-            self.exit((self._context, selected))
+            self.exit((self._template_ctx, selected))
 
     def _on_components_done_add(self, selected: list[str] | None) -> None:
         self.exit(selected)
