@@ -15,58 +15,49 @@ Tools like cookiecutter-uv generate an entire project at once. That works for gr
 
 ---
 
-## Quick Start
+## Getting Started
+
+### Without Installing (uvx)
+
+**CLI:**
 
 ```bash
-# No install needed — run directly from GitHub
-uvx --from git+https://github.com/Takfes/bootstrap.git bootstrap --help
-
-# Scaffold a new project (interactive — you pick the components)
-bootstrap new my-project
-
-# Add components to an existing project
-bootstrap add
-
-# See what components are available
-bootstrap list
-
-# See what's already configured in the current directory
-bootstrap detect
+uvx --from git+https://github.com/Takfes/bootstrap.git bootstrap new my-project
+uvx --from git+https://github.com/Takfes/bootstrap.git bootstrap add
+uvx --from git+https://github.com/Takfes/bootstrap.git bootstrap list
 ```
 
----
-
-## Installation
+**TUI:**
 
 ```bash
-# Permanent install (recommended)
+uvx --from "bootstrap[tui] @ git+https://github.com/Takfes/bootstrap.git" bootstrap --tui new my-project
+uvx --from "bootstrap[tui] @ git+https://github.com/Takfes/bootstrap.git" bootstrap --tui add
+```
+
+### With Installation
+
+**CLI:**
+
+```bash
 uv tool install git+https://github.com/Takfes/bootstrap.git
-
-# Or run ad-hoc without installing
-uvx --from git+https://github.com/Takfes/bootstrap.git bootstrap <command>
+bootstrap new my-project
+bootstrap add
+bootstrap list
 ```
 
-To enable the terminal UI:
+**TUI:**
 
 ```bash
 uv tool install "bootstrap[tui] @ git+https://github.com/Takfes/bootstrap.git"
+bootstrap --tui new my-project
+bootstrap --tui add
 ```
-
----
-
-## Available Components
-
-| Component | What it adds | Requires |
-|-----------|-------------|---------|
-| `uv` | `pyproject.toml` with uv, ruff, mypy, deptry, pytest, coverage configs | — |
-| `precommit` | `.pre-commit-config.yaml` — ruff, mypy, gitleaks, semgrep, conventional commits | uv |
-| `agents` | AI agent configs: Claude (`CLAUDE.md`), Gemini, Copilot, VSCode | — |
-
-Components are fetched from this repo via git sparse-checkout — only the requested folder is downloaded, never the full repo.
 
 ---
 
 ## Commands
+
+The following commands are identical regardless of how you invoke `bootstrap` (installed or via uvx).
 
 ### `bootstrap new <project-name>`
 
@@ -98,14 +89,40 @@ Scan the current directory and report which components are installed, the projec
 
 ---
 
-## Terminal UI
+## Source
 
-Pass `--tui` to any interactive command to launch a full-screen terminal interface (requires `bootstrap[tui]`):
+### `src/bootstrap/`
 
-```bash
-bootstrap --tui new my-project   # form for variables + component checklist
-bootstrap --tui add              # component checklist with installed items marked
 ```
+src/bootstrap/
+├── cli.py          # argparse CLI — subcommands: new, add, list, detect
+├── manifest.py     # loads component list from components/manifest.toml
+├── components.py   # ComponentSpec dataclass + cached get_components()
+├── fetcher.py      # git sparse-checkout primitive
+├── installer.py    # fetch + substitute + copy; smart merge for pyproject.toml
+├── detector.py     # scans project for layout, installed components, git remote
+└── tui.py          # optional Textual TUI (bootstrap[tui])
+```
+
+Zero runtime dependencies — pure Python standard library.
+
+### Available Components
+
+```
+components/
+├── manifest.toml   # source of truth for available components
+├── uv/
+├── precommit/
+└── agents/
+```
+
+| Component | What it adds | Requires |
+|-----------|-------------|---------|
+| `uv` | `pyproject.toml` with uv, ruff, mypy, deptry, pytest, coverage configs | — |
+| `precommit` | `.pre-commit-config.yaml` — ruff, mypy, gitleaks, semgrep, conventional commits | uv |
+| `agents` | AI agent configs: Claude (`CLAUDE.md`), Gemini, Copilot, VSCode | — |
+
+Components are fetched via git sparse-checkout — only the requested folder is downloaded, never the full repo.
 
 ---
 
@@ -137,48 +154,3 @@ bootstrap new my-project
 # Or per-invocation
 bootstrap add agents --repo-url https://github.com/your-org/bootstrap.git
 ```
-
----
-
-## Architecture
-
-```
-src/bootstrap/
-├── cli.py          # argparse CLI — subcommands: new, add, list, detect
-├── manifest.py     # loads component list from components/manifest.toml
-├── components.py   # ComponentSpec dataclass + cached get_components()
-├── fetcher.py      # git sparse-checkout primitive
-├── installer.py    # fetch + substitute + copy; smart merge for pyproject.toml
-├── detector.py     # scans project for layout, installed components, git remote
-└── tui.py          # optional Textual TUI (bootstrap[tui])
-
-components/
-├── manifest.toml   # source of truth for available components
-├── uv/
-├── precommit/
-└── agents/
-```
-
-**Zero runtime dependencies.** Pure Python standard library. The `fetcher.py` primitive is also the shared entry point for a planned agentic skill — the same function the CLI calls can be called by Claude or Gemini to add components based on project context.
-
----
-
-## Development
-
-```bash
-git clone https://github.com/Takfes/bootstrap
-cd bootstrap
-uv sync
-just check      # lint + typecheck
-just test-cli   # smoke test list + detect
-just run list   # run any command locally
-```
-
----
-
-## Roadmap
-
-- [ ] Agentic skill wrapping `fetcher.py` for AI-driven setup
-- [ ] `bootstrap update` — re-apply components to refresh config files
-- [ ] LLM-powered `README.md` generation in `bootstrap new`
-- [ ] More components: CI/CD, devcontainer, docs, Dockerfile, justfile

@@ -11,7 +11,6 @@ Requires: pip install 'bootstrap[tui]'
 """
 
 import argparse
-import subprocess
 import sys
 from pathlib import Path
 
@@ -222,11 +221,6 @@ def cmd_new(args: argparse.Namespace) -> int:
     overwrite_map = _confirm_overwrite_components(
         ordered, state.installed_components, force_overwrite=False
     )
-
-    # --- Git init ---
-    if not (project_dir / ".git").exists():
-        subprocess.run(["git", "init"], cwd=project_dir, capture_output=True)
-        print("  ✓ git init")
 
     # --- Install ---
     print(f"\nInstalling: {', '.join(ordered)}\n")

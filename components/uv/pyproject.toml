@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "{{description}}"
 authors = [{ name = "{{author}}", email = "{{author_email}}" }]
 readme = "README.md"
-keywords = [{{project_keywords}}]
+keywords = []
 requires-python = ">={{python_version}}"
 license = { text = "MIT" }
 classifiers = [
@@ -124,7 +124,7 @@ source = ["{{package_name}}"]
 omit = ["tests/*"]
 
 [tool.coverage.report]
-fail_under = {{min_coverage}}
+fail_under = 80
 
 [tool.interrogate]
 ignore-init-method = true   # class docstring covers __init__
