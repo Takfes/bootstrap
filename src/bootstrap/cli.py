@@ -1,13 +1,10 @@
 """bootstrap CLI — portable Python project scaffolding tool.
 
 Entry points:
-  bootstrap [--tui] new <project-name>   — scaffold a new project
-  bootstrap [--tui] add [component...]   — add components to existing project
-  bootstrap list                         — list available components
-  bootstrap detect                       — detect what's already configured here
-
-Add --tui to any interactive command to launch the Textual terminal UI.
-Requires: pip install 'bootstrap[tui]'
+  bootstrap new <project-name>   — scaffold a new project
+  bootstrap add [component...]   — add components to existing project
+  bootstrap list                 — list available components
+  bootstrap detect               — detect what's already configured here
 """
 
 import argparse
@@ -186,26 +183,14 @@ def cmd_new(args: argparse.Namespace) -> int:
     comp_map = {c.name: c for c in components}
 
     # --- Collect context and select components ---
-    if args.tui:
-        try:
-            from .tui import run_tui_new
-        except ImportError:
-            print("✗ TUI requires 'textual': pip install 'bootstrap[tui]'")
-            return 1
-        result = run_tui_new(project_name, components, state)
-        if result is None:
-            print("Cancelled.")
-            return 0
-        context, requested = result
+    context = _collect_context(project_name, state=state)
+    if args.components:
+        requested = args.components
     else:
-        context = _collect_context(project_name, state=state)
-        if args.components:
-            requested = args.components
-        else:
-            requested = _select_components_cli(components)
-            if not requested:
-                print("No components selected. Nothing to install.")
-                return 0
+        requested = _select_components_cli(components)
+        if not requested:
+            print("No components selected. Nothing to install.")
+            return 0
 
     # --- Validate ---
     unknown = [c for c in requested if c not in comp_map]
@@ -274,27 +259,14 @@ def cmd_add(args: argparse.Namespace) -> int:
     comp_map = {c.name: c for c in components}
 
     # --- Collect context and select components ---
-    if args.tui:
-        try:
-            from .tui import run_tui_add
-        except ImportError:
-            print("✗ TUI requires 'textual': pip install 'bootstrap[tui]'")
-            return 1
-        context = _collect_context(project_name, state=state)
-        result = run_tui_add(components, state)
-        if result is None:
-            print("Cancelled.")
-            return 0
-        requested = result
+    context = _collect_context(project_name, state=state)
+    if args.components:
+        requested = list(args.components)
     else:
-        context = _collect_context(project_name, state=state)
-        if args.components:
-            requested = list(args.components)
-        else:
-            requested = _select_components_cli(components)
-            if not requested:
-                print("No components selected. Nothing to add.")
-                return 0
+        requested = _select_components_cli(components)
+        if not requested:
+            print("No components selected. Nothing to add.")
+            return 0
 
     # --- Validate ---
     unknown = [c for c in requested if c not in comp_map]
@@ -410,12 +382,6 @@ def main() -> int:
     parser.add_argument(
         "--version", action="version", version=f"bootstrap {__version__}"
     )
-    parser.add_argument(
-        "--tui",
-        action="store_true",
-        help="Launch Textual terminal UI (requires: pip install 'bootstrap[tui]')",
-    )
-
     sub = parser.add_subparsers(dest="command", metavar="<command>")
     sub.required = True
 

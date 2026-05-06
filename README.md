@@ -27,13 +27,6 @@ uvx --from git+https://github.com/Takfes/bootstrap.git bootstrap add
 uvx --from git+https://github.com/Takfes/bootstrap.git bootstrap list
 ```
 
-**TUI:**
-
-```bash
-uvx --from "bootstrap[tui] @ git+https://github.com/Takfes/bootstrap.git" bootstrap --tui new my-project
-uvx --from "bootstrap[tui] @ git+https://github.com/Takfes/bootstrap.git" bootstrap --tui add
-```
-
 ### With Installation
 
 **CLI:**
@@ -45,13 +38,6 @@ bootstrap add
 bootstrap list
 ```
 
-**TUI:**
-
-```bash
-uv tool install "bootstrap[tui] @ git+https://github.com/Takfes/bootstrap.git"
-bootstrap --tui new my-project
-bootstrap --tui add
-```
 
 ---
 
@@ -101,7 +87,6 @@ src/bootstrap/
 ├── fetcher.py      # git sparse-checkout primitive
 ├── installer.py    # fetch + substitute + copy; smart merge for pyproject.toml
 ├── detector.py     # scans project for layout, installed components, git remote
-└── tui.py          # optional Textual TUI (bootstrap[tui])
 ```
 
 Zero runtime dependencies — pure Python standard library.

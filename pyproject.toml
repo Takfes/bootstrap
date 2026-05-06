@@ -7,9 +7,6 @@ readme = "README.md"
 requires-python = ">=3.11"
 dependencies = []   # zero runtime dependencies — pure stdlib
 
-[project.optional-dependencies]
-tui = ["textual>=0.80.0"]
-
 [project.scripts]
 bootstrap = "bootstrap.cli:main"
 
