@@ -1,0 +1,6 @@
+/future_work
+/pmo
+/.venv
+__pycache__/
+*.pyc
+/dist

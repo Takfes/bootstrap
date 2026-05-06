@@ -1,0 +1,496 @@
+"""bootstrap CLI — portable Python project scaffolding tool.
+
+Entry points:
+  bootstrap [--tui] new <project-name>   — scaffold a new project
+  bootstrap [--tui] add [component...]   — add components to existing project
+  bootstrap list                         — list available components
+  bootstrap detect                       — detect what's already configured here
+
+Add --tui to any interactive command to launch the Textual terminal UI.
+Requires: pip install 'bootstrap[tui]'
+"""
+
+import argparse
+import subprocess
+import sys
+from pathlib import Path
+
+from . import __version__
+from .components import ComponentSpec, get_component, get_components
+from .detector import ProjectState
+from .installer import install_component, get_template_repo
+
+
+# ---------------------------------------------------------------------------
+# Context helpers
+# ---------------------------------------------------------------------------
+
+def _collect_context(
+    project_name: str,
+    *,
+    state: ProjectState | None = None,
+    extra: dict[str, str] | None = None,
+) -> dict[str, str]:
+    """Gather template substitution variables interactively.
+
+    Pre-fills known values from detected project state where available.
+    """
+    ctx: dict[str, str] = {}
+
+    ctx["project_name"] = project_name
+    ctx["package_name"] = project_name.lower().replace("-", "_").replace(" ", "_")
+    ctx["repo_name"] = project_name.lower().replace("_", "-").replace(" ", "-")
+
+    default_org = (state.github_org if state else None) or ""
+    ctx["github_org"] = _ask("GitHub org/username", default=default_org)
+    ctx["author"] = _ask("Author name")
+    ctx["author_email"] = _ask("Author email")
+    ctx["description"] = _ask("One-line project description", default="")
+
+    python_version = _ask("Minimum Python version", default="3.11")
+    ctx["python_version"] = python_version
+    ctx["python_version_nodot"] = python_version.replace(".", "")
+
+    if extra:
+        ctx.update(extra)
+
+    return ctx
+
+
+def _ask(prompt: str, *, default: str = "") -> str:
+    """Prompt the user for a value, with an optional default."""
+    display = f"{prompt} [{default}]: " if default else f"{prompt}: "
+    value = input(display).strip()
+    return value if value else default
+
+
+# ---------------------------------------------------------------------------
+# Component selection helpers
+# ---------------------------------------------------------------------------
+
+def _select_components_cli(components: list[ComponentSpec]) -> list[str]:
+    """Present a numbered checklist in the terminal and return selected names."""
+    print("\nAvailable components:")
+    for i, spec in enumerate(components, 1):
+        deps = f"  (needs: {', '.join(spec.requires)})" if spec.requires else ""
+        print(f"  [{i:2}] {spec.name:<15}  {spec.description}{deps}")
+    print()
+    raw = input(
+        "Select components — space-separated numbers or names (e.g. '1 3 agents'): "
+    ).strip()
+
+    if not raw:
+        return []
+
+    name_map = {spec.name: spec for spec in components}
+    selected: list[str] = []
+    seen: set[str] = set()
+
+    for token in raw.split():
+        name: str | None = None
+        if token.isdigit():
+            idx = int(token) - 1
+            if 0 <= idx < len(components):
+                name = components[idx].name
+        elif token in name_map:
+            name = token
+        else:
+            print(f"  warning: '{token}' is not a valid component or number — skipped")
+            continue
+        if name and name not in seen:
+            selected.append(name)
+            seen.add(name)
+
+    return selected
+
+
+def _resolve_dependencies(
+    requested: list[str],
+    comp_map: dict[str, ComponentSpec],
+) -> list[str]:
+    """Expand requested list with required dependencies, deps-first ordering."""
+    resolved: list[str] = []
+    seen: set[str] = set()
+
+    def _add(name: str, *, auto_added: bool = False) -> None:
+        if name in seen:
+            return
+        seen.add(name)
+        spec = comp_map.get(name)
+        if spec is None:
+            return
+        for req in spec.requires:
+            if req not in seen:
+                if req not in {c for c in requested}:
+                    print(f"  note: adding '{req}' (required by '{name}')")
+                _add(req)
+        resolved.append(name)
+
+    for name in requested:
+        _add(name)
+
+    return resolved
+
+
+def _confirm_overwrite_components(
+    ordered: list[str],
+    installed: set[str],
+    *,
+    force_overwrite: bool = False,
+) -> dict[str, bool]:
+    """For each already-installed component, ask user whether to overwrite.
+
+    Returns a dict mapping component name to overwrite bool.
+    If force_overwrite is True, all already-installed components are overwritten
+    without prompting (backward-compatible --overwrite flag behaviour).
+    """
+    overwrite_map: dict[str, bool] = {}
+    for name in ordered:
+        if name in installed:
+            if force_overwrite:
+                overwrite_map[name] = True
+            else:
+                answer = input(
+                    f"  Component '{name}' appears to be installed. Overwrite? [y/N]: "
+                ).strip().lower()
+                overwrite_map[name] = answer in ("y", "yes")
+        else:
+            overwrite_map[name] = False
+    return overwrite_map
+
+
+# ---------------------------------------------------------------------------
+# Subcommand: new
+# ---------------------------------------------------------------------------
+
+def cmd_new(args: argparse.Namespace) -> int:
+    """Scaffold a new project from scratch."""
+    project_name: str = args.name
+    project_dir = Path(args.directory or project_name)
+
+    if project_dir.exists() and any(project_dir.iterdir()):
+        print(f"✗ Directory '{project_dir}' already exists and is not empty.")
+        print("  Use 'bootstrap add' to add components to an existing project.")
+        return 1
+
+    project_dir.mkdir(parents=True, exist_ok=True)
+    print(f"\nScaffolding new project '{project_name}' in {project_dir}/\n")
+
+    state = ProjectState.scan(project_dir)
+
+    try:
+        components = get_components(repo_url=args.repo_url, branch=args.branch)
+    except Exception as e:
+        print(f"✗ Failed to load component list: {e}")
+        return 1
+
+    comp_map = {c.name: c for c in components}
+
+    # --- Collect context and select components ---
+    if args.tui:
+        try:
+            from .tui import run_tui_new
+        except ImportError:
+            print("✗ TUI requires 'textual': pip install 'bootstrap[tui]'")
+            return 1
+        result = run_tui_new(project_name, components, state)
+        if result is None:
+            print("Cancelled.")
+            return 0
+        context, requested = result
+    else:
+        context = _collect_context(project_name, state=state)
+        if args.components:
+            requested = args.components
+        else:
+            requested = _select_components_cli(components)
+            if not requested:
+                print("No components selected. Nothing to install.")
+                return 0
+
+    # --- Validate ---
+    unknown = [c for c in requested if c not in comp_map]
+    if unknown:
+        print(f"✗ Unknown components: {', '.join(unknown)}")
+        print("  Run 'bootstrap list' to see available components.")
+        return 1
+
+    # --- Resolve dependencies ---
+    ordered = _resolve_dependencies(requested, comp_map)
+
+    # --- Overwrite confirmation ---
+    overwrite_map = _confirm_overwrite_components(
+        ordered, state.installed_components, force_overwrite=False
+    )
+
+    # --- Git init ---
+    if not (project_dir / ".git").exists():
+        subprocess.run(["git", "init"], cwd=project_dir, capture_output=True)
+        print("  ✓ git init")
+
+    # --- Install ---
+    print(f"\nInstalling: {', '.join(ordered)}\n")
+    failed: list[str] = []
+    for name in ordered:
+        ok = install_component(
+            name,
+            project_dir,
+            context,
+            overwrite=overwrite_map.get(name, False),
+            repo_url=args.repo_url,
+            branch=args.branch,
+        )
+        if not ok:
+            failed.append(name)
+
+    print()
+    if failed:
+        print(f"⚠  Completed with errors. Failed components: {', '.join(failed)}")
+        return 1
+
+    print(f"✓ Project '{project_name}' ready in {project_dir}/")
+    print(f"\nNext steps:")
+    print(f"  cd {project_dir}")
+    print(f"  uv sync")
+    print(f"  pre-commit install")
+    return 0
+
+
+# ---------------------------------------------------------------------------
+# Subcommand: add
+# ---------------------------------------------------------------------------
+
+def cmd_add(args: argparse.Namespace) -> int:
+    """Add one or more components to an existing project."""
+    project_dir = Path(args.directory or ".")
+
+    if not project_dir.exists():
+        print(f"✗ Directory '{project_dir}' does not exist.")
+        return 1
+
+    state = ProjectState.scan(project_dir)
+    project_name = _infer_project_name(project_dir)
+
+    try:
+        components = get_components(repo_url=args.repo_url, branch=args.branch)
+    except Exception as e:
+        print(f"✗ Failed to load component list: {e}")
+        return 1
+
+    comp_map = {c.name: c for c in components}
+
+    # --- Collect context and select components ---
+    if args.tui:
+        try:
+            from .tui import run_tui_add
+        except ImportError:
+            print("✗ TUI requires 'textual': pip install 'bootstrap[tui]'")
+            return 1
+        context = _collect_context(project_name, state=state)
+        result = run_tui_add(components, state)
+        if result is None:
+            print("Cancelled.")
+            return 0
+        requested = result
+    else:
+        context = _collect_context(project_name, state=state)
+        if args.components:
+            requested = list(args.components)
+        else:
+            requested = _select_components_cli(components)
+            if not requested:
+                print("No components selected. Nothing to add.")
+                return 0
+
+    # --- Validate ---
+    unknown = [c for c in requested if c not in comp_map]
+    if unknown:
+        print(f"✗ Unknown components: {', '.join(unknown)}")
+        print("  Run 'bootstrap list' to see available components.")
+        return 1
+
+    # --- Overwrite confirmation (--overwrite skips the prompt) ---
+    overwrite_map = _confirm_overwrite_components(
+        requested, state.installed_components, force_overwrite=args.overwrite
+    )
+
+    # --- Install ---
+    print(f"\nAdding to {project_dir}/: {', '.join(requested)}\n")
+    failed: list[str] = []
+    for name in requested:
+        ok = install_component(
+            name,
+            project_dir,
+            context,
+            overwrite=overwrite_map.get(name, False),
+            repo_url=args.repo_url,
+            branch=args.branch,
+        )
+        if not ok:
+            failed.append(name)
+
+    print()
+    if failed:
+        print(f"⚠  Completed with errors. Failed: {', '.join(failed)}")
+        return 1
+
+    print("✓ Done.")
+    return 0
+
+
+# ---------------------------------------------------------------------------
+# Subcommand: list
+# ---------------------------------------------------------------------------
+
+def cmd_list(args: argparse.Namespace) -> int:
+    """List available components."""
+    repo_url = getattr(args, "repo_url", None)
+    branch = getattr(args, "branch", "main")
+
+    try:
+        components = get_components(repo_url=repo_url, branch=branch)
+    except Exception as e:
+        print(f"✗ Failed to load component list: {e}")
+        return 1
+
+    print("\nAvailable components:\n")
+    max_name = max(len(c.name) for c in components)
+    for spec in components:
+        deps = f"  (needs: {', '.join(spec.requires)})" if spec.requires else ""
+        print(f"  {spec.name:<{max_name}}  {spec.description}{deps}")
+    print()
+    return 0
+
+
+# ---------------------------------------------------------------------------
+# Subcommand: detect
+# ---------------------------------------------------------------------------
+
+def cmd_detect(args: argparse.Namespace) -> int:
+    """Detect the current state of a project directory."""
+    project_dir = Path(args.directory or ".")
+    state = ProjectState.scan(project_dir)
+    state.print_summary()
+
+    try:
+        components = get_components()
+    except Exception:
+        return 0
+
+    missing = [c.name for c in components if c.name not in state.installed_components]
+    if missing:
+        print(f"Components not yet installed: {', '.join(missing)}")
+        print(f"  Run: bootstrap add {' '.join(missing)}")
+    return 0
+
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+def _infer_project_name(project_dir: Path) -> str:
+    """Try to read project name from pyproject.toml, fall back to dirname."""
+    pyproject = project_dir / "pyproject.toml"
+    if pyproject.exists():
+        try:
+            import tomllib
+
+            data = tomllib.loads(pyproject.read_text())
+            name = data.get("project", {}).get("name")
+            if name:
+                return name
+        except Exception:
+            pass
+    return project_dir.resolve().name
+
+
+# ---------------------------------------------------------------------------
+# Entry point
+# ---------------------------------------------------------------------------
+
+def main() -> int:
+    parser = argparse.ArgumentParser(
+        prog="bootstrap",
+        description="Portable Python project scaffolding CLI.",
+    )
+    parser.add_argument(
+        "--version", action="version", version=f"bootstrap {__version__}"
+    )
+    parser.add_argument(
+        "--tui",
+        action="store_true",
+        help="Launch Textual terminal UI (requires: pip install 'bootstrap[tui]')",
+    )
+
+    sub = parser.add_subparsers(dest="command", metavar="<command>")
+    sub.required = True
+
+    # --- new ---
+    p_new = sub.add_parser("new", help="Scaffold a new project")
+    p_new.add_argument("name", help="Project name (also used as directory name)")
+    p_new.add_argument(
+        "-d", "--directory",
+        help="Target directory (defaults to <name>)",
+    )
+    p_new.add_argument(
+        "-c", "--components",
+        nargs="+",
+        metavar="COMPONENT",
+        help="Components to install — skips interactive selection",
+    )
+    _add_remote_args(p_new)
+    p_new.set_defaults(func=cmd_new)
+
+    # --- add ---
+    p_add = sub.add_parser("add", help="Add component(s) to an existing project")
+    p_add.add_argument(
+        "components",
+        nargs="*",
+        metavar="COMPONENT",
+        help="Component names to add (omit to pick interactively)",
+    )
+    p_add.add_argument(
+        "-d", "--directory",
+        help="Project directory (defaults to current directory)",
+    )
+    p_add.add_argument(
+        "--overwrite",
+        action="store_true",
+        help="Silently overwrite existing files (skips the per-component prompt)",
+    )
+    _add_remote_args(p_add)
+    p_add.set_defaults(func=cmd_add)
+
+    # --- list ---
+    p_list = sub.add_parser("list", help="List available components")
+    _add_remote_args(p_list)
+    p_list.set_defaults(func=cmd_list)
+
+    # --- detect ---
+    p_detect = sub.add_parser("detect", help="Detect current project configuration")
+    p_detect.add_argument(
+        "-d", "--directory",
+        help="Directory to scan (defaults to current directory)",
+    )
+    p_detect.set_defaults(func=cmd_detect)
+
+    args = parser.parse_args()
+    return args.func(args)
+
+
+def _add_remote_args(parser: argparse.ArgumentParser) -> None:
+    """Add shared remote-control arguments to a subparser."""
+    parser.add_argument(
+        "--repo-url",
+        default=None,
+        help=f"Override template repo URL (default: {get_template_repo()})",
+    )
+    parser.add_argument(
+        "--branch",
+        default="main",
+        help="Template repo branch to pull from (default: main)",
+    )
+
+
+if __name__ == "__main__":
+    sys.exit(main())

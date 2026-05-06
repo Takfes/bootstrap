@@ -1,0 +1,24 @@
+# Bootstrap component registry.
+# This file is the source of truth for all available template components.
+# Adding a new component: create components/<name>/ and add an entry here.
+
+[[components]]
+name = "uv"
+description = "uv dependency management + pyproject.toml with all tool configs (ruff, mypy, deptry, pytest, coverage)"
+repo_path = "components/uv"
+requires = []
+optional = false
+
+[[components]]
+name = "precommit"
+description = "pre-commit hooks (ruff-format, ruff-check, mypy, gitleaks, semgrep, conventional commits)"
+repo_path = "components/precommit"
+requires = ["uv"]
+optional = false
+
+[[components]]
+name = "agents"
+description = "AI agent configuration: Claude, Gemini, Copilot, VSCode"
+repo_path = "components/agents"
+requires = []
+optional = true

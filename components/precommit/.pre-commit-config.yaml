@@ -1,0 +1,249 @@
+# .pre-commit-config.yaml — superset configuration
+#
+# HOW STAGES WORK:
+#   Hooks run automatically at different points in the git workflow.
+#   Each stage maps to a git hook file installed in .git/hooks/.
+#
+#   🚀 commit     → fires on `git commit`          → .git/hooks/pre-commit
+#   💬 commit-msg → fires after typing the message → .git/hooks/commit-msg
+#   🔬 push       → fires on `git push`            → .git/hooks/pre-push
+#
+#   Hooks with no `stages:` key default to the commit stage.
+#   Hooks with `stages: [push]` only run on push.
+#   Hooks with `stages: [commit-msg]` only run on commit-msg.
+#
+# INSTALL (run once per repo):
+#   pre-commit install \
+#     --hook-type pre-commit \
+#     --hook-type pre-push \
+#     --hook-type commit-msg
+#
+# UPDATE all pinned versions:
+#   pre-commit autoupdate
+#
+# Run a stage manually:
+#   pre-commit run --all-files                          # commit stage
+#   pre-commit run --hook-stage push --all-files        # push stage
+#   pre-commit run --hook-stage commit-msg              # commit-msg stage
+
+# ══════════════════════════════════════════════════════════════════════════════
+# 🚀 STAGE: commit  —  fast checks, run on every git commit
+# ══════════════════════════════════════════════════════════════════════════════
+
+repos:
+
+  # ── 🧹 Cache & temp file cleanup ──────────────────────────────────────────
+  - repo: local
+    hooks:
+      - id: clean-cache-files
+        name: "🧹 Cleanup · Remove cache and temporary files"
+        entry: bash -c
+        args:
+          - |
+            echo "Cleaning cache and temporary files..."
+            find . -name ".venv" -prune -o -type d -name "__pycache__" -exec rm -rf {} +
+            find . -name ".venv" -prune -o -type f -name ".DS_Store" -exec rm -f {} +
+            find . -name ".venv" -prune -o -type d -name "catboost_info" -exec rm -rf {} +
+            find . -name ".venv" -prune -o -type d -name ".ruff_cache" -exec rm -rf {} +
+            find . -name ".venv" -prune -o -type d -name ".ipynb_checkpoints" -exec rm -rf {} +
+            find . -name ".venv" -prune -o -type d -name "*.egg-info" -exec rm -rf {} +
+            echo "Cache cleanup completed."
+        language: system
+        always_run: true
+        pass_filenames: false
+
+  # ── 📁 File hygiene ────────────────────────────────────────────────────────
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: "v5.0.0"
+    hooks:
+      - id: trailing-whitespace
+        name: "📁 Files · Remove trailing whitespace"
+        args: [--markdown-linebreak-ext=md]
+      - id: end-of-file-fixer
+        name: "📁 Files · Ensure files end with a newline"
+      - id: check-added-large-files
+        name: "📁 Files · Block files larger than 500 KB"
+        args: [--maxkb=500]
+      - id: mixed-line-ending
+        name: "📁 Files · Normalise mixed line endings"
+        args: [--fix=auto]
+      - id: check-case-conflict
+        name: "📁 Files · Detect filename case conflicts"
+      - id: check-merge-conflict
+        name: "📁 Git  · Catch unresolved merge conflict markers"
+      - id: check-executables-have-shebangs
+        name: "📁 Scripts · Verify executable files have shebangs"
+      - id: check-shebang-scripts-are-executable
+        name: "📁 Scripts · Verify shebang scripts are executable"
+      - id: debug-statements
+        name: "📁 Python · Catch stray breakpoint() / pdb imports"
+      - id: check-docstring-first
+        name: "📁 Python · Verify docstrings appear before code"
+      - id: check-yaml
+        name: "📁 YAML  · Validate syntax"
+      - id: check-toml
+        name: "📁 TOML  · Validate syntax"
+      - id: check-json
+        name: "📁 JSON  · Validate syntax"
+        exclude: \.ipynb$
+      - id: pretty-format-json
+        name: "📁 JSON  · Autoformat JSON files"
+        exclude: \.ipynb$
+        args: [--autofix, --no-sort-keys, --indent=2]
+      - id: check-xml
+        name: "📁 XML   · Validate syntax"
+
+  # ── 🐍 Python: lint and format (ruff) ─────────────────────────────────────
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: "v0.12.7"
+    hooks:
+      - id: ruff-check
+        name: "🐍 Python · Lint and auto-fix code (ruff)"
+        args:
+          [
+            --fix,
+            --exit-non-zero-on-fix,
+            --config=pyproject.toml,
+            --output-format=concise,
+          ]
+      - id: ruff-format
+        name: "🐍 Python · Format code (ruff)"
+        args: [--config=pyproject.toml]
+      - id: ruff-check
+        name: "📓 Jupyter · Lint notebooks (ruff)"
+        args: [--fix]
+        files: \.ipynb$
+
+  # ── 📚 Python: docstring coverage ──────────────────────────────────────────
+  - repo: https://github.com/econchick/interrogate
+    rev: 1.7.0
+    hooks:
+      - id: interrogate
+        name: "📚 Python · Check docstring coverage (interrogate)"
+        args: [--config=pyproject.toml, -v]
+        files: \.py$
+        types: [python]
+
+  # ── 📖 Markdown: lint and format ───────────────────────────────────────────
+  # markdownlint-cli2 enforces consistent markdown style and catches issues
+  # such as bare URLs, missing blank lines around headings, and hard tabs.
+  # Requires Node.js on the host. Config lives in .markdownlint-cli2.yaml.
+  - repo: https://github.com/DavidAnson/markdownlint-cli2
+    rev: v0.17.2
+    hooks:
+      - id: markdownlint-cli2
+        name: "📖 Markdown · Lint and fix markdown (markdownlint-cli2)"
+        args: [--fix]
+        types: [markdown]
+
+  # ── 🔤 Typo detection ──────────────────────────────────────────────────────
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.3.0
+    hooks:
+      - id: codespell
+        name: "🔤 Prose · Detect and fix typos (codespell)"
+        additional_dependencies: [tomli]
+        args: [--write-changes]
+        # To ignore specific words: args: [--write-changes, --ignore-words-list, "word1,word2"]
+
+  # ── 🔒 Secret scanning ─────────────────────────────────────────────────────
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.28.0
+    hooks:
+      - id: gitleaks
+        name: "🔒 Security · Scan for secrets and credentials (gitleaks)"
+        args: ["--report-format=table", "--redact"]
+
+  # ── 📦 Dependency analysis ─────────────────────────────────────────────────
+  # Validates that pyproject.toml matches actual import usage.
+  # DEP001 = missing dep, DEP002 = unused dep, DEP003 = transitive, DEP004 = dev-only
+  # Adjust --ignore list to match your project's dependency layout.
+  - repo: https://github.com/fpgmaas/deptry
+    rev: "0.20.0"
+    hooks:
+      - id: deptry
+        name: "📦 Python · Analyse dependencies (deptry)"
+        args: ["--ignore", "DEP001,DEP003,DEP004"]
+
+# ══════════════════════════════════════════════════════════════════════════════
+# 💬 STAGE: commit-msg  —  validates the commit message text
+# ══════════════════════════════════════════════════════════════════════════════
+
+  # ── Conventional Commits format enforcement ────────────────────────────────
+  # Requires --hook-type commit-msg in the install command (see top of file).
+  # Accepted types: feat | fix | docs | style | refactor | test | chore | ci | build | perf | revert
+  - repo: https://github.com/compilerla/conventional-pre-commit
+    rev: v3.4.0
+    hooks:
+      - id: conventional-pre-commit
+        name: "💬 Git · Enforce Conventional Commits format"
+        stages: [commit-msg]
+        args: [feat, fix, docs, style, refactor, test, chore, ci, build, perf, revert]
+
+# ══════════════════════════════════════════════════════════════════════════════
+# 🔬 STAGE: push  —  deep checks, run only on git push
+# ══════════════════════════════════════════════════════════════════════════════
+
+  # ── 🔍 Static type checking ────────────────────────────────────────────────
+  # Moved to push because mypy follows the full import graph and can be slow.
+  # This runs against staged files only — run `just typecheck` for a full check
+  # before opening a PR.
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.14.0
+    hooks:
+      - id: mypy
+        name: "🔍 Python · Static type checking (mypy)"
+        stages: [push]
+        additional_dependencies: []
+        # Add type stubs as your project grows, e.g.:
+        # additional_dependencies: [types-requests, types-PyYAML, types-boto3]
+
+  # ── 🛡️ Advanced security analysis ─────────────────────────────────────────
+  # --config=auto selects Semgrep's recommended rule set for the detected language.
+  # Replace with a registry path or rule ID for tighter, project-specific control.
+  - repo: https://github.com/semgrep/semgrep
+    rev: v1.95.0
+    hooks:
+      - id: semgrep
+        name: "🛡️  Security · Advanced static analysis (semgrep)"
+        stages: [push]
+        args: [--config=auto, --error]
+        # Restrict to Python files for speed: types: [python]
+
+  # ── 🐳 Infrastructure / config security scan ──────────────────────────────
+  # Scans Dockerfiles, Kubernetes manifests, Terraform, and other IaC files.
+  # Requires trivy installed on the host:
+  #   macOS:  brew install trivy
+  #   Linux:  https://aquasecurity.github.io/trivy/latest/getting-started/installation/
+  - repo: local
+    hooks:
+      - id: trivy-config
+        name: "🐳 Security · Scan IaC and config files (trivy)"
+        entry: trivy config --exit-code 1 --severity HIGH,CRITICAL .
+        language: system
+        pass_filenames: false
+        stages: [push]
+
+# ══════════════════════════════════════════════════════════════════════════════
+# ⚙️  OPTIONAL HOOKS — uncomment when applicable to the project
+# ══════════════════════════════════════════════════════════════════════════════
+
+  # ── nbstripout: strip Jupyter notebook outputs before committing ───────────
+  # Keeps diffs clean and prevents large binary blobs in history.
+  # Enable for any project that uses .ipynb files.
+  # - repo: https://github.com/kynan/nbstripout
+  #   rev: 0.7.1
+  #   hooks:
+  #     - id: nbstripout
+  #       name: "📓 Jupyter · Strip notebook outputs (nbstripout)"
+
+  # ── sqlfluff: SQL linting and auto-formatting ──────────────────────────────
+  # Enable for projects that contain SQL files. Set --dialect to match your DB.
+  # - repo: https://github.com/sqlfluff/sqlfluff
+  #   rev: 3.3.0
+  #   hooks:
+  #     - id: sqlfluff-lint
+  #       name: "🗄️  SQL · Lint SQL files (sqlfluff)"
+  #     - id: sqlfluff-fix
+  #       name: "🗄️  SQL · Fix SQL files (sqlfluff)"
+  #       args: [--dialect, ansi]  # replace: postgres | mysql | bigquery | spark | tsql
