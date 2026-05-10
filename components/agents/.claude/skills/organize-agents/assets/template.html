@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Agents Browser</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            mono: ['JetBrains Mono', 'monospace'],
+            sans: ['DM Sans', 'sans-serif'],
+          },
+          colors: {
+            bg:      '#08080e',
+            surface: '#0f0f18',
+            border:  '#1e1e2e',
+            muted:   '#3a3a52',
+            dim:     '#6b6b8a',
+            text:    '#d4d4e8',
+            bright:  '#f0f0ff',
+            cyan:    '#22d3ee',
+            'cyan-dim': '#0a3a42',
+          },
+          animation: {
+            'fade-in': 'fadeIn 0.18s ease-out',
+          },
+          keyframes: {
+            fadeIn: { from: { opacity: 0, transform: 'translateY(4px)' }, to: { opacity: 1, transform: 'none' } },
+          },
+        },
+      },
+    }
+  </script>
+
+  <style>
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { background: #08080e; }
+
+    /* Subtle grid texture */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(34,211,238,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(34,211,238,0.03) 1px, transparent 1px);
+      background-size: 32px 32px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Glow behind header */
+    .header-glow {
+      background: radial-gradient(ellipse 60% 120px at 50% 0, rgba(34,211,238,0.06), transparent);
+    }
+
+    /* Search input */
+    .search-input::placeholder { color: #3a3a52; }
+    .search-input:focus { outline: none; }
+
+    /* Category tab */
+    .cat-tab {
+      border-bottom: 2px solid transparent;
+      transition: color 0.15s, border-color 0.15s;
+      cursor: pointer;
+    }
+    .cat-tab:hover  { color: #d4d4e8; }
+    .cat-tab.active { color: #22d3ee; border-bottom-color: #22d3ee; }
+
+    /* Agent card */
+    .agent-card {
+      border: 1px solid #1e1e2e;
+      background: #0f0f18;
+      transition: border-color 0.15s, transform 0.15s;
+      position: relative;
+    }
+    .agent-card:hover {
+      border-color: #3a3a52;
+      transform: translateY(-1px);
+    }
+    .agent-card:hover .copy-btn { opacity: 1; }
+
+    /* Copy button */
+    .copy-btn {
+      opacity: 0;
+      transition: opacity 0.15s, color 0.15s;
+      cursor: pointer;
+      background: none;
+      border: none;
+      padding: 0;
+      color: #3a3a52;
+    }
+    .copy-btn:hover { color: #22d3ee; }
+    .copy-btn.copied { color: #22c55e; opacity: 1; }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #1e1e2e; border-radius: 2px; }
+
+    /* Count badge */
+    .count-badge {
+      background: #1e1e2e;
+      color: #6b6b8a;
+      font-size: 0.65rem;
+      padding: 1px 6px;
+      border-radius: 99px;
+    }
+
+    /* Empty state */
+    #empty { display: none; }
+  </style>
+</head>
+
+<body class="min-h-screen font-sans text-text relative z-10">
+
+  <!-- Header -->
+  <header class="header-glow sticky top-0 z-20 border-b border-border bg-bg/90 backdrop-blur-md">
+    <div class="max-w-6xl mx-auto px-6 py-4 flex items-center gap-6">
+
+      <!-- Logo / Title -->
+      <div class="flex items-center gap-3 shrink-0">
+        <span class="text-cyan text-lg font-mono font-semibold tracking-tight">@agents</span>
+        <span id="total-count" class="count-badge font-mono">0</span>
+      </div>
+
+      <!-- Search -->
+      <div class="flex-1 flex items-center gap-2 bg-surface border border-border rounded-md px-3 py-2 focus-within:border-muted transition-colors">
+        <svg class="w-3.5 h-3.5 text-muted shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+        </svg>
+        <input
+          id="search"
+          type="text"
+          placeholder="search agents..."
+          class="search-input flex-1 bg-transparent text-sm font-mono text-text placeholder-muted"
+        />
+        <kbd id="search-count" class="text-xs font-mono text-dim hidden">0</kbd>
+      </div>
+
+      <!-- Meta -->
+      <div class="shrink-0 text-xs font-mono text-dim hidden sm:block" id="generated-date"></div>
+    </div>
+
+    <!-- Category tabs -->
+    <div class="max-w-6xl mx-auto px-6 border-t border-border overflow-x-auto">
+      <div id="tabs" class="flex gap-0 text-xs font-mono text-dim whitespace-nowrap"></div>
+    </div>
+  </header>
+
+  <!-- Main content -->
+  <main class="max-w-6xl mx-auto px-6 py-8">
+
+    <!-- Agents grid -->
+    <div id="grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 animate-fade-in"></div>
+
+    <!-- Empty state -->
+    <div id="empty" class="text-center py-24">
+      <p class="font-mono text-dim text-sm">no agents match <span id="empty-query" class="text-cyan"></span></p>
+    </div>
+  </main>
+
+  <!-- Toast -->
+  <div id="toast"
+    class="fixed bottom-6 right-6 bg-surface border border-border text-bright text-xs font-mono px-4 py-2 rounded-md
+           translate-y-10 opacity-0 transition-all duration-200 pointer-events-none z-50">
+    copied to clipboard
+  </div>
+
+  <script>
+    // ─── DATA (injected by organize-agents) ─────────────────────────────────
+    const AGENTS_DATA = __AGENTS_JSON__;
+    const META = __META_JSON__;
+    // ────────────────────────────────────────────────────────────────────────
+
+    // State
+    let activeCategory = 'All';
+    let query = '';
+
+    // DOM refs
+    const searchEl   = document.getElementById('search');
+    const gridEl     = document.getElementById('grid');
+    const tabsEl     = document.getElementById('tabs');
+    const emptyEl    = document.getElementById('empty');
+    const emptyQ     = document.getElementById('empty-query');
+    const totalCount = document.getElementById('total-count');
+    const searchCount= document.getElementById('search-count');
+    const dateEl     = document.getElementById('generated-date');
+    const toast      = document.getElementById('toast');
+
+    // Set generated date
+    if (META?.generated) dateEl.textContent = META.generated;
+    totalCount.textContent = AGENTS_DATA.length;
+
+    // Gather categories (preserve insertion order)
+    const categories = ['All', ...new Set(AGENTS_DATA.map(a => a.category))];
+
+    // Build tabs
+    function buildTabs() {
+      tabsEl.innerHTML = '';
+      categories.forEach(cat => {
+        const el = document.createElement('button');
+        el.className = 'cat-tab px-4 py-3 text-xs font-mono' + (cat === activeCategory ? ' active' : '');
+        el.textContent = cat;
+        el.addEventListener('click', () => { activeCategory = cat; buildTabs(); render(); });
+        tabsEl.appendChild(el);
+      });
+    }
+
+    // Copy to clipboard
+    let toastTimer;
+    function copyAgentName(name, btn) {
+      navigator.clipboard.writeText('@' + name).then(() => {
+        btn.classList.add('copied');
+        btn.innerHTML = checkIcon();
+        clearTimeout(toastTimer);
+        toast.classList.remove('translate-y-10', 'opacity-0');
+        toastTimer = setTimeout(() => {
+          toast.classList.add('translate-y-10', 'opacity-0');
+          btn.classList.remove('copied');
+          btn.innerHTML = copyIcon();
+        }, 1800);
+      });
+    }
+
+    function copyIcon() {
+      return `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
+          d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+      </svg>`;
+    }
+
+    function checkIcon() {
+      return `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+      </svg>`;
+    }
+
+    // Highlight matching text
+    function highlight(text, q) {
+      if (!q) return escapeHtml(text);
+      const escaped = escapeHtml(text);
+      const re = new RegExp(`(${escapeRegex(q)})`, 'gi');
+      return escaped.replace(re, '<mark class="bg-cyan-dim text-cyan rounded-sm">$1</mark>');
+    }
+
+    function escapeHtml(s) {
+      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+    function escapeRegex(s) {
+      return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+
+    // Category colour map
+    const BADGE_COLORS = [
+      'text-violet-400 bg-violet-400/10 border-violet-400/20',
+      'text-cyan-400 bg-cyan-400/10 border-cyan-400/20',
+      'text-emerald-400 bg-emerald-400/10 border-emerald-400/20',
+      'text-rose-400 bg-rose-400/10 border-rose-400/20',
+      'text-sky-400 bg-sky-400/10 border-sky-400/20',
+      'text-fuchsia-400 bg-fuchsia-400/10 border-fuchsia-400/20',
+      'text-orange-400 bg-orange-400/10 border-orange-400/20',
+      'text-teal-400 bg-teal-400/10 border-teal-400/20',
+      'text-pink-400 bg-pink-400/10 border-pink-400/20',
+      'text-indigo-400 bg-indigo-400/10 border-indigo-400/20',
+      'text-lime-400 bg-lime-400/10 border-lime-400/20',
+    ];
+
+    // Model-specific badge colours
+    const MODEL_COLORS = {
+      opus:    'text-violet-400 bg-violet-400/10 border-violet-400/20',
+      sonnet:  'text-cyan-400 bg-cyan-400/10 border-cyan-400/20',
+      haiku:   'text-emerald-400 bg-emerald-400/10 border-emerald-400/20',
+      default: 'text-dim bg-muted/10 border-muted/20',
+    };
+
+    const catColorMap = {};
+    categories.filter(c => c !== 'All').forEach((cat, i) => {
+      catColorMap[cat] = BADGE_COLORS[i % BADGE_COLORS.length];
+    });
+
+    function modelColor(model) {
+      const key = (model || 'default').toLowerCase().split('-')[0];
+      return MODEL_COLORS[key] || MODEL_COLORS.default;
+    }
+
+    function formatTools(tools) {
+      if (!tools || tools === 'unspecified') return '';
+      return tools.split(',').map(t => t.trim()).join(' · ');
+    }
+
+    // Render
+    function render() {
+      const q = query.trim().toLowerCase();
+
+      const filtered = AGENTS_DATA.filter(agent => {
+        const catMatch = activeCategory === 'All' || agent.category === activeCategory;
+        const textMatch = !q ||
+          agent.name.toLowerCase().includes(q) ||
+          agent.description.toLowerCase().includes(q) ||
+          (agent.tools || '').toLowerCase().includes(q);
+        return catMatch && textMatch;
+      });
+
+      // Update search count
+      if (q) {
+        searchCount.textContent = filtered.length;
+        searchCount.classList.remove('hidden');
+      } else {
+        searchCount.classList.add('hidden');
+      }
+
+      gridEl.innerHTML = '';
+
+      if (filtered.length === 0) {
+        emptyEl.style.display = 'block';
+        emptyQ.textContent = `"${query}"`;
+        return;
+      }
+      emptyEl.style.display = 'none';
+
+      filtered.forEach(agent => {
+        const badgeClass = catColorMap[agent.category] || BADGE_COLORS[0];
+        const mClass = modelColor(agent.model);
+        const toolsStr = formatTools(agent.tools);
+        const card = document.createElement('div');
+        card.className = 'agent-card rounded-lg p-4 flex flex-col gap-2.5';
+        card.innerHTML = `
+          <div class="flex items-start justify-between gap-2">
+            <span class="font-mono font-semibold text-sm text-bright leading-tight">${highlight(agent.name, q)}</span>
+            <button class="copy-btn shrink-0 mt-0.5" title="Copy @${agent.name}" onclick="copyAgentName('${escapeHtml(agent.name)}', this)">
+              ${copyIcon()}
+            </button>
+          </div>
+          <p class="text-xs text-dim leading-relaxed line-clamp-3 font-sans">${highlight(agent.description, q)}</p>
+          ${toolsStr ? `<p class="text-[10px] text-muted font-mono leading-relaxed truncate" title="${escapeHtml(toolsStr)}">${escapeHtml(toolsStr)}</p>` : ''}
+          <div class="flex items-center justify-between gap-2 mt-auto pt-1">
+            <span class="inline-flex items-center px-2 py-0.5 rounded border text-[10px] font-mono tracking-wide ${badgeClass}">
+              ${escapeHtml(agent.category)}
+            </span>
+            <span class="inline-flex items-center px-2 py-0.5 rounded border text-[10px] font-mono tracking-wide ${mClass}">
+              ${escapeHtml(agent.model || 'default')}
+            </span>
+          </div>
+        `;
+        gridEl.appendChild(card);
+      });
+    }
+
+    // Events
+    searchEl.addEventListener('input', e => { query = e.target.value; render(); });
+
+    // Keyboard shortcut: / focuses search
+    document.addEventListener('keydown', e => {
+      if (e.key === '/' && document.activeElement !== searchEl) {
+        e.preventDefault();
+        searchEl.focus();
+      }
+      if (e.key === 'Escape') searchEl.blur();
+    });
+
+    // Init
+    buildTabs();
+    render();
+  </script>
+</body>
+</html>
