@@ -1,0 +1,36 @@
+# CP-SAT User Notes
+
+This file is **user-maintained**. The `cp-sat-scheduler` agent reads it at startup but never modifies it. Use it to record:
+
+- Problem domain context the agent should know.
+- Past decisions you want preserved across sessions.
+- Conventions specific to this project (naming, granularity choices, etc.).
+- Things the agent should always check or always avoid for your problem.
+
+Delete the sections you don't need; add sections as your project evolves. The file is just markdown — structure it however helps you.
+
+---
+
+## Problem domain
+
+(e.g., "Scheduling technician visits to customer sites. Each visit has a 1-hour window, technicians have skill requirements, vehicles have capacity for parts. Optimize for total travel time within 99% SLA on visit completion.")
+
+## Decisions already made
+
+(e.g., "Time granularity is 5 minutes — established because all visit durations are multiples of 5. Don't propose finer granularity unless we change the underlying data.")
+
+## Project conventions
+
+(e.g., "All task variable names follow `visit_{site_id}` pattern. Resource variables follow `tech_{tech_id}` pattern. Please follow these naming conventions in new code.")
+
+## Things to always check
+
+(e.g., "Always confirm the SLA constraint is satisfied before reporting a solution as feasible. Always sanity-check that travel times match the latest distance matrix in `data/distances.csv`.")
+
+## Things to avoid
+
+(e.g., "Don't propose decomposition by region until we have validated that monolithic doesn't scale; previous attempts at regional decomposition produced worse solutions due to cross-region rebalancing constraints.")
+
+## Open questions for the agent to flag
+
+(e.g., "We are unsure whether overtime should be a hard limit or a soft penalty. If the model makes this choice implicitly, please surface the assumption explicitly.")
