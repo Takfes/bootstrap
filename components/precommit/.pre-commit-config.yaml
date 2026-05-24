@@ -1,22 +1,17 @@
 # .pre-commit-config.yaml — superset configuration
 #
 # HOW STAGES WORK:
-#   Hooks run automatically at different points in the git workflow.
-#   Each stage maps to a git hook file installed in .git/hooks/.
-#
 #   🚀 commit     → fires on `git commit`          → .git/hooks/pre-commit
 #   💬 commit-msg → fires after typing the message → .git/hooks/commit-msg
 #   🔬 push       → fires on `git push`            → .git/hooks/pre-push
 #
 #   Hooks with no `stages:` key default to the commit stage.
-#   Hooks with `stages: [push]` only run on push.
-#   Hooks with `stages: [commit-msg]` only run on commit-msg.
 #
 # INSTALL (run once per repo):
 #   pre-commit install \
 #     --hook-type pre-commit \
-#     --hook-type pre-push \
-#     --hook-type commit-msg
+#     --hook-type commit-msg \
+#     --hook-type pre-push
 #
 # UPDATE all pinned versions:
 #   pre-commit autoupdate
@@ -25,6 +20,9 @@
 #   pre-commit run --all-files                          # commit stage
 #   pre-commit run --hook-stage push --all-files        # push stage
 #   pre-commit run --hook-stage commit-msg              # commit-msg stage
+#
+# Skip a hook for one commit/push:
+#   SKIP=semgrep git push
 
 # ══════════════════════════════════════════════════════════════════════════════
 # 🚀 STAGE: commit  —  fast checks, run on every git commit
@@ -52,6 +50,18 @@ repos:
         always_run: true
         pass_filenames: false
 
+  # ── 🔒 uv lockfile consistency ────────────────────────────────────────────
+  # Only runs when pyproject.toml or uv.lock are staged.
+  # Catches the common mistake of editing pyproject.toml without running uv lock.
+  - repo: local
+    hooks:
+      - id: uv-lock-check
+        name: "🔒 uv · Verify lockfile is consistent with pyproject.toml"
+        language: system
+        entry: uv lock --locked
+        pass_filenames: false
+        files: ^(pyproject\.toml|uv\.lock)$
+
   # ── 📁 File hygiene ────────────────────────────────────────────────────────
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: "v5.0.0"
@@ -63,7 +73,7 @@ repos:
         name: "📁 Files · Ensure files end with a newline"
       - id: check-added-large-files
         name: "📁 Files · Block files larger than 500 KB"
-        args: [--maxkb=500]
+        args: ['--maxkb=500']  # Adjust per project; use Git LFS for large binary assets.
       - id: mixed-line-ending
         name: "📁 Files · Normalise mixed line endings"
         args: [--fix=auto]
@@ -94,8 +104,9 @@ repos:
         name: "📁 XML   · Validate syntax"
 
   # ── 🐍 Python: lint and format (ruff) ─────────────────────────────────────
+  # Keep in sync with ruff version in pyproject.toml [dependency-groups.dev].
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: "v0.12.7"
+    rev: "v0.9.6"
     hooks:
       - id: ruff-check
         name: "🐍 Python · Lint and auto-fix code (ruff)"
@@ -114,20 +125,28 @@ repos:
         args: [--fix]
         files: \.ipynb$
 
+  # ── 📓 Jupyter: strip notebook outputs ────────────────────────────────────
+  # Strips cell outputs and execution counts before commit to keep diffs clean.
+  # Remove or comment out if the project does not contain .ipynb files.
+  - repo: https://github.com/kynan/nbstripout
+    rev: 0.7.1
+    hooks:
+      - id: nbstripout
+        name: "📓 Jupyter · Strip notebook outputs (nbstripout)"
+
   # ── 📚 Python: docstring coverage ──────────────────────────────────────────
   - repo: https://github.com/econchick/interrogate
     rev: 1.7.0
     hooks:
       - id: interrogate
         name: "📚 Python · Check docstring coverage (interrogate)"
-        args: [--config=pyproject.toml, -v]
+        args: [--config=pyproject.toml, -vv, '--fail-under=80']  # Lower for early-stage; raise as API stabilises.
         files: \.py$
         types: [python]
 
   # ── 📖 Markdown: lint and format ───────────────────────────────────────────
-  # markdownlint-cli2 enforces consistent markdown style and catches issues
-  # such as bare URLs, missing blank lines around headings, and hard tabs.
-  # Requires Node.js on the host. Config lives in .markdownlint-cli2.yaml.
+  # Requires Node.js (any LTS). Installed automatically by pre-commit via the node language handler.
+  # If pre-commit fails to install: ensure nvm or a system node is available.
   - repo: https://github.com/DavidAnson/markdownlint-cli2
     rev: v0.17.2
     hooks:
@@ -143,10 +162,13 @@ repos:
       - id: codespell
         name: "🔤 Prose · Detect and fix typos (codespell)"
         additional_dependencies: [tomli]
-        args: [--write-changes]
+        args: [--write-changes]  # Auto-corrects typos in-place; modified files are re-staged automatically.
         # To ignore specific words: args: [--write-changes, --ignore-words-list, "word1,word2"]
 
   # ── 🔒 Secret scanning ─────────────────────────────────────────────────────
+  # Requires gitleaks installed on the host:
+  #   macOS:  brew install gitleaks
+  #   Linux:  https://github.com/gitleaks/gitleaks#installing
   - repo: https://github.com/gitleaks/gitleaks
     rev: v8.28.0
     hooks:
@@ -155,23 +177,33 @@ repos:
         args: ["--report-format=table", "--redact"]
 
   # ── 📦 Dependency analysis ─────────────────────────────────────────────────
-  # Validates that pyproject.toml matches actual import usage.
-  # DEP001 = missing dep, DEP002 = unused dep, DEP003 = transitive, DEP004 = dev-only
-  # Adjust --ignore list to match your project's dependency layout.
+  # DEP001 = missing dep, DEP002 = unused dep, DEP003 = transitive, DEP004 = dev-only in production
+  # DEP002 (unused dependency) is ignored — too many false positives from optional/conditional imports.
+  # DEP001/DEP003/DEP004 are enforced to catch missing, transitive, and misplaced dependencies.
   - repo: https://github.com/fpgmaas/deptry
     rev: "0.20.0"
     hooks:
       - id: deptry
         name: "📦 Python · Analyse dependencies (deptry)"
-        args: ["--ignore", "DEP001,DEP003,DEP004"]
+        args: ["--ignore", "DEP002"]
+
+  # ── 🗄️ SQL: lint and format ────────────────────────────────────────────────
+  # Remove or comment out if the project does not contain SQL files.
+  # Set --dialect to match your database engine (ansi, postgres, mysql, bigquery, snowflake, …).
+  - repo: https://github.com/sqlfluff/sqlfluff
+    rev: 3.3.0
+    hooks:
+      - id: sqlfluff-lint
+        name: "🗄️  SQL · Lint SQL files (sqlfluff)"
+      - id: sqlfluff-fix
+        name: "🗄️  SQL · Fix SQL files (sqlfluff)"
+        args: [--dialect, ansi]
 
 # ══════════════════════════════════════════════════════════════════════════════
 # 💬 STAGE: commit-msg  —  validates the commit message text
 # ══════════════════════════════════════════════════════════════════════════════
 
   # ── Conventional Commits format enforcement ────────────────────────────────
-  # Requires --hook-type commit-msg in the install command (see top of file).
-  # Accepted types: feat | fix | docs | style | refactor | test | chore | ci | build | perf | revert
   - repo: https://github.com/compilerla/conventional-pre-commit
     rev: v3.4.0
     hooks:
@@ -185,9 +217,6 @@ repos:
 # ══════════════════════════════════════════════════════════════════════════════
 
   # ── 🔍 Static type checking ────────────────────────────────────────────────
-  # Moved to push because mypy follows the full import graph and can be slow.
-  # This runs against staged files only — run `just typecheck` for a full check
-  # before opening a PR.
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.14.0
     hooks:
@@ -196,25 +225,24 @@ repos:
         stages: [push]
         additional_dependencies: []
         # Add type stubs as your project grows, e.g.:
-        # additional_dependencies: [types-requests, types-PyYAML, types-boto3]
+        # additional_dependencies: [types-requests, types-PyYAML]
 
   # ── 🛡️ Advanced security analysis ─────────────────────────────────────────
-  # --config=auto selects Semgrep's recommended rule set for the detected language.
-  # Replace with a registry path or rule ID for tighter, project-specific control.
+  # --config=p/python uses a pinned Semgrep rule set (avoids runtime rule downloads with --config=auto).
+  # Requires network. To skip offline: SKIP=semgrep git push
   - repo: https://github.com/semgrep/semgrep
     rev: v1.95.0
     hooks:
       - id: semgrep
         name: "🛡️  Security · Advanced static analysis (semgrep)"
         stages: [push]
-        args: [--config=auto, --error]
-        # Restrict to Python files for speed: types: [python]
+        args: [--config=p/python, --error]
 
   # ── 🐳 Infrastructure / config security scan ──────────────────────────────
-  # Scans Dockerfiles, Kubernetes manifests, Terraform, and other IaC files.
   # Requires trivy installed on the host:
   #   macOS:  brew install trivy
   #   Linux:  https://aquasecurity.github.io/trivy/latest/getting-started/installation/
+  # Consider CI-only deployment if contributors may not have trivy locally.
   - repo: local
     hooks:
       - id: trivy-config
@@ -223,27 +251,3 @@ repos:
         language: system
         pass_filenames: false
         stages: [push]
-
-# ══════════════════════════════════════════════════════════════════════════════
-# ⚙️  OPTIONAL HOOKS — uncomment when applicable to the project
-# ══════════════════════════════════════════════════════════════════════════════
-
-  # ── nbstripout: strip Jupyter notebook outputs before committing ───────────
-  # Keeps diffs clean and prevents large binary blobs in history.
-  # Enable for any project that uses .ipynb files.
-  # - repo: https://github.com/kynan/nbstripout
-  #   rev: 0.7.1
-  #   hooks:
-  #     - id: nbstripout
-  #       name: "📓 Jupyter · Strip notebook outputs (nbstripout)"
-
-  # ── sqlfluff: SQL linting and auto-formatting ──────────────────────────────
-  # Enable for projects that contain SQL files. Set --dialect to match your DB.
-  # - repo: https://github.com/sqlfluff/sqlfluff
-  #   rev: 3.3.0
-  #   hooks:
-  #     - id: sqlfluff-lint
-  #       name: "🗄️  SQL · Lint SQL files (sqlfluff)"
-  #     - id: sqlfluff-fix
-  #       name: "🗄️  SQL · Fix SQL files (sqlfluff)"
-  #       args: [--dialect, ansi]  # replace: postgres | mysql | bigquery | spark | tsql

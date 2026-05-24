@@ -5,7 +5,7 @@ description = "{{description}}"
 authors = [{ name = "{{author}}", email = "{{author_email}}" }]
 readme = "README.md"
 keywords = []
-requires-python = ">={{python_version}}"
+requires-python = ">={{python_version}},<4"  # Update upper bound when Python 4 is released
 license = { text = "MIT" }
 classifiers = [
     "Programming Language :: Python :: 3",
@@ -18,9 +18,13 @@ dependencies = []
 Homepage = "https://github.com/{{github_org}}/{{repo_name}}"
 Repository = "https://github.com/{{github_org}}/{{repo_name}}"
 
+# [project.scripts]
+# {{repo_name}} = "{{package_name}}.cli:main"
+
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling"]  # Installed by the build frontend in an isolated env; not needed in the venv
 build-backend = "hatchling.build"
+# Alternatives: setuptools, flit_core, pdm-backend
 
 [tool.hatch.build.targets.wheel]
 # src layout: packages = ["src/{{package_name}}"]
@@ -63,6 +67,7 @@ target-version = "py{{python_version_nodot}}"
 exclude = [".venv", "dist", "build"]
 
 [tool.ruff.lint]
+# D (pydocstring) rules intentionally omitted — interrogate enforces docstring coverage
 select = [
     "E",    # pycodestyle errors
     "W",    # pycodestyle warnings
@@ -97,7 +102,7 @@ ignore = [
 ]
 
 [tool.ruff.format]
-preview = true
+# preview = true  # Enables unstable rules; re-evaluate on each ruff release
 
 [tool.mypy]
 python_version = "{{python_version}}"
@@ -108,19 +113,20 @@ show_error_codes = true         # enables targeted type: ignore[code] suppressio
 no_implicit_optional = true     # None defaults must be explicitly typed as Optional[T]
 warn_return_any = true
 warn_unused_configs = true
+mypy_path = ["src"]
 # src layout: packages = ["{{package_name}}"]
 packages = ["{{package_name}}"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "--cov={{package_name}} --cov-report=term-missing --cov-report=xml"
+addopts = "--cov --cov-report=term-missing --cov-report=xml"
 markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
     "integration: marks tests as integration tests",
 ]
 
 [tool.coverage.run]
-source = ["{{package_name}}"]
+source = ["src/{{package_name}}"]
 omit = ["tests/*"]
 
 [tool.coverage.report]
@@ -130,8 +136,8 @@ fail_under = 80
 ignore-init-method = true   # class docstring covers __init__
 ignore-init-module = true   # __init__.py files rarely benefit from module docstrings
 ignore-magic = true         # __repr__, __str__ etc. are self-documenting by convention
-ignore-semiprivate = false
-ignore-private = false
+ignore-semiprivate = false  # set true to skip _private methods
+ignore-private = false      # set true to skip __dunder methods beyond magic
 ignore-property-decorators = false
 ignore-module = false
 ignore-nested-functions = false
@@ -144,11 +150,12 @@ color = true
 
 [tool.codespell]
 skip = ".git,*.lock,*.toml,dist,build,.venv"
-ignore-words-list = ""
+# ignore-words-list = "exemple,woord"
 count = true
 quiet-level = 3
 
 [tool.tox]
+# Requires py311/py312/py313 to be installed: uv python install 3.11 3.12 3.13
 legacy_tox_ini = """
 [tox]
 envlist = py311, py312, py313
@@ -161,3 +168,7 @@ commands = pytest {posargs}
 
 [tool.deptry]
 root_packages = ["{{package_name}}"]
+
+[tool.uv]
+# managed = true  # Uncomment to signal this project uses uv-managed Python
+# python-preference = "managed-only"  # Prefer uv-installed Pythons over system ones
