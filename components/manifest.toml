@@ -5,7 +5,7 @@
 [[components]]
 name = "uv"
 description = "uv dependency management + pyproject.toml with all tool configs (ruff, mypy, deptry, pytest, coverage)"
-repo_path = "components/uv"
+repo_path = "components/ultraviolet"
 requires = []
 optional = false
 
@@ -17,22 +17,22 @@ requires = ["uv"]
 optional = false
 
 [[components]]
-name = "agents[configuration]"
-description = "AI agent configuration: Claude, rules, CLAUDE.MD etc"
+name = "agent-configuration"
+description = "AI agent configuration: CLAUDE.md, behavioural rules, memory workflows"
 repo_path = "components/agent-configuration"
 requires = []
 optional = true
 
 [[components]]
-name = "agents[subagents]"
-description = "AI Agent/Subagent Profiles: Python Pro, Business Analyst etc"
-repo_path = "components/agents-subagents"
+name = "agent-subagents"
+description = "AI subagent profiles: Python Pro, Business Analyst, Code Reviewer, and more"
+repo_path = "components/agent-subagents"
 requires = []
 optional = true
 
 [[components]]
-name = "agents[skills-commands]"
-description = "AI Agent Skills/Commands: planning, web search etc"
-repo_path = "components/agents-skills-commands"
+name = "agent-skills"
+description = "AI agent skills and commands: planning, brainstorming, web search, git workflows, and more"
+repo_path = "components/agent-skills"
 requires = []
 optional = true

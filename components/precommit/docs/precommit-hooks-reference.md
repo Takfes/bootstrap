@@ -1,67 +1,6 @@
-# pre-commit Component
+# pre-commit Hooks Reference
 
-## What is pre-commit and why it matters
-
-Every project eventually accumulates the same problems: someone commits with debug statements left in, a typo slips through a PR, a dependency is added to `pyproject.toml` but the lockfile isn't updated, a secret ends up in version control. Pre-commit solves this by attaching automated checks directly to Git operations — before a commit lands, before a message is accepted, before a push goes out. The checks run locally on the developer's machine, so problems are caught and fixed in seconds rather than discovered minutes later in CI. Because the configuration lives in `.pre-commit-config.yaml` and is committed to the repo, every contributor runs the same checks automatically.
-
-This component delivers `.pre-commit-config.yaml` with hooks across three Git stages.
-
----
-
-## Document contents
-
-1. [Install](#install) — wire up the Git hooks once per clone
-2. [All hooks at a glance](#all-hooks-at-a-glance) — full table with stage and one-liner per hook
-3. [Hooks in detail](#hooks-in-detail) — per-hook sections: what it catches, how to install, how to run manually
-4. [Running hooks manually](#running-hooks-manually) — run any hook or stage outside the commit cycle
-5. [Skipping and bypassing](#skipping-and-bypassing) — SKIP env var, `--no-verify`, when each is appropriate
-6. [Updating hooks](#updating-hooks) — `autoupdate`, version pinning, keeping ruff in sync
-7. [Host dependencies](#host-dependencies) — tools pre-commit cannot manage automatically
-
----
-
-## Install
-
-```bash
-pre-commit install \
-  --hook-type pre-commit \
-  --hook-type commit-msg \
-  --hook-type pre-push
-```
-
-Run once per clone. Re-run after any change to `.pre-commit-config.yaml`.
-
-**Why three `--hook-type` flags?**
-
-By default `pre-commit install` only wires up the `pre-commit` Git hook. Hooks in the `commit-msg` and `push` stages live in separate files in `.git/hooks/` and are silently ignored unless explicitly installed.
-
-| Git hook file           | Stage        | Fires when                                    |
-| ----------------------- | ------------ | --------------------------------------------- |
-| `.git/hooks/pre-commit` | `commit`     | Before each commit is recorded                |
-| `.git/hooks/commit-msg` | `commit-msg` | After the message is typed, before the commit |
-| `.git/hooks/pre-push`   | `push`       | Before `git push` sends commits to the remote |
-
----
-
-## All hooks at a glance
-
-| Section                                             | Stage      | Description                                                                                                                                                      |
-| --------------------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [clean-cache-files](#clean-cache-files)             | commit     | Removes generated cache dirs and OS artifacts (`__pycache__`, `.DS_Store`, `.ruff_cache`, etc.) before every commit                                              |
-| [uv-lock-check](#uv-lock-check)                     | commit     | Blocks commits where `pyproject.toml` and `uv.lock` have diverged — catches the common mistake of adding a dependency without regenerating the lockfile          |
-| [file hygiene](#file-hygiene)                       | commit     | ~14 lightweight checks targeting whitespace, line endings, file size, config syntax (YAML/TOML/JSON/XML), and common filesystem hazards — most auto-fix silently |
-| [ruff](#ruff-check-and-ruff-format)                 | commit     | Lints and reformats all Python files and notebooks — catches style violations, unused imports, bugs, and security patterns, then applies consistent formatting   |
-| [nbstripout](#nbstripout)                           | commit     | Strips cell outputs and execution counts from notebooks so diffs show only code changes, not rendered data                                                       |
-| [interrogate](#interrogate)                         | commit     | Enforces docstring presence across the public API — fails if coverage falls below the configured threshold                                                       |
-| [markdownlint-cli2](#markdownlint-cli2)             | commit     | Lints all Markdown files for structural consistency (heading hierarchy, blank lines, list formatting) and auto-fixes what it can                                 |
-| [codespell](#codespell)                             | commit     | Scans source code, comments, and docs for common misspellings and auto-corrects them in-place                                                                    |
-| [gitleaks](#gitleaks)                               | commit     | Scans staged content for secrets, API keys, tokens, and credentials before they enter version control                                                            |
-| [deptry](#deptry)                                   | commit     | Audits `pyproject.toml` against actual imports to surface missing, transitive, and misplaced dependency declarations                                             |
-| [sqlfluff](#sqlfluff)                               | commit     | Lints and auto-formats SQL files for style consistency and dialect correctness                                                                                   |
-| [conventional-pre-commit](#conventional-pre-commit) | commit-msg | Validates every commit message against the Conventional Commits format — enables automated changelogs and semantic versioning                                    |
-| [mypy](#mypy)                                       | push       | Runs full static type checking across the codebase — catches type mismatches and missing annotations that tests typically miss                                   |
-| [semgrep](#semgrep)                                 | push       | Advanced static analysis for security vulnerabilities, OWASP patterns, and code anti-patterns using the `p/python` rule set                                      |
-| [trivy-config](#trivy-config)                       | push       | Scans IaC and config files (Dockerfiles, Kubernetes manifests, Terraform) for misconfigurations at HIGH/CRITICAL severity                                        |
+Per-hook detail: what each hook catches, how to install it, and how to run it manually. For the quick overview table and install instructions, see the component `README.md`.
 
 ---
 
@@ -313,10 +252,10 @@ Analyses source code against `pyproject.toml` to surface dependency declaration 
 
 | Code     | What it flags                                                                                          | Enforced?                                                        |
 | -------- | ------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------- |
-| `DEP001` | Imported in code but not declared in `[project.dependencies]`                                          | ✅ Yes                                                           |
-| `DEP003` | Imported directly but only available as a transitive dependency (fragile — can break on parent update) | ✅ Yes                                                           |
-| `DEP004` | Dev tooling accidentally declared in runtime `dependencies`                                            | ✅ Yes                                                           |
-| `DEP002` | Declared in `dependencies` but never imported                                                          | ❌ Ignored — too many false positives from optional/lazy imports |
+| `DEP001` | Imported in code but not declared in `[project.dependencies]`                                          | Yes                                                              |
+| `DEP003` | Imported directly but only available as a transitive dependency (fragile — can break on parent update) | Yes                                                              |
+| `DEP004` | Dev tooling accidentally declared in runtime `dependencies`                                            | Yes                                                              |
+| `DEP002` | Declared in `dependencies` but never imported                                                          | No — ignored due to false positives from optional/lazy imports   |
 
 **Install:** Managed by pre-commit automatically. Also in `[dependency-groups].dev`:
 

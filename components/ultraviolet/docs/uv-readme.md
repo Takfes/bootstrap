@@ -10,10 +10,10 @@ Provides the Python project foundation: `pyproject.toml` and `.python-version`.
 |------|-----------|
 | `pyproject.toml` | The template — full project metadata, tool configs, dependency groups |
 | `.python-version` | Python version pin for uv (`{{python_version}}`) |
-| `uv-workflow.md` | uv commands and daily workflow reference |
-| `pyproject-reference.md` | Every `pyproject.toml` section annotated — what it does and why |
-| `packaging-structures.md` | How to structure a project — layouts, workspaces, extras, decision guide |
-| `packaging-mechanics.md` | How the build and import system works under the hood |
+| `docs/uv-workflow.md` | uv commands and daily workflow reference |
+| `docs/uv-pyproject-reference.md` | Every `pyproject.toml` section annotated — what it does and why |
+| `docs/uv-packaging-structures.md` | How to structure a project — layouts, workspaces, extras, decision guide |
+| `docs/uv-packaging-mechanics.md` | How the build and import system works under the hood |
 
 ---
 
@@ -21,10 +21,10 @@ Provides the Python project foundation: `pyproject.toml` and `.python-version`.
 
 | Goal | Read |
 |------|------|
-| Learn uv commands and daily workflow | `uv-workflow.md` |
-| Understand what a section in `pyproject.toml` does | `pyproject-reference.md` |
-| Decide how to structure a new project (layouts, workspaces, extras) | `packaging-structures.md` |
-| Debug an import error, understand editable mode, or learn how builds work | `packaging-mechanics.md` |
+| Learn uv commands and daily workflow | `docs/uv-workflow.md` |
+| Understand what a section in `pyproject.toml` does | `docs/uv-pyproject-reference.md` |
+| Decide how to structure a new project (layouts, workspaces, extras) | `docs/uv-packaging-structures.md` |
+| Debug an import error, understand editable mode, or learn how builds work | `docs/uv-packaging-mechanics.md` |
 | Just want the template variable reference | Section below ↓ |
 
 ---
@@ -82,7 +82,7 @@ The following files are kept for reference but their content has been reorganise
 
 | Old file | Content now in |
 |----------|---------------|
-| `uv-python-crash-course.md` | `uv-workflow.md` |
-| `PLAN.md` | `pyproject-reference.md` (fixes applied inline) |
-| `packaging-structures.md` (original) | `packaging-structures.md` (rewritten) |
-| `packaging-deep-dive.md` (original) | `packaging-structures.md` + `packaging-mechanics.md` |
+| `uv-python-crash-course.md` | `docs/uv-workflow.md` |
+| `PLAN.md` | `docs/uv-pyproject-reference.md` (fixes applied inline) |
+| `packaging-structures.md` (original) | `docs/uv-packaging-structures.md` (rewritten) |
+| `packaging-deep-dive.md` (original) | `docs/uv-packaging-structures.md` + `docs/uv-packaging-mechanics.md` |

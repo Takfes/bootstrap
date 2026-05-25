@@ -2,7 +2,7 @@
 
 The architect's reference — open this when starting a new project or deciding how to structure one. Covers terminology, layout options, multi-package patterns, workspaces, optional extras, and a complete decision guide.
 
-For build mechanics, editable installs, and sys.path internals, see `packaging-mechanics.md`.
+For build mechanics, editable installs, and sys.path internals, see `uv-packaging-mechanics.md`.
 
 ---
 

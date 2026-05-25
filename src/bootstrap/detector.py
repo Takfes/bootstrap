@@ -29,6 +29,9 @@ class ProjectState:
     has_mkdocs: bool = False
     has_justfile: bool = False
     has_agents: bool = False
+    has_agent_configuration: bool = False
+    has_agent_subagents: bool = False
+    has_agent_skills: bool = False
 
     # Project structure
     layout: Layout = "unknown"
@@ -65,10 +68,25 @@ class ProjectState:
         state.has_justfile = (
             (path / "justfile").exists() or (path / "Justfile").exists()
         )
+        # agent-configuration: has CLAUDE.md AND .agents/rules/ directory
+        state.has_agent_configuration = (
+            (path / "CLAUDE.md").exists() and (path / ".agents" / "rules").is_dir()
+        )
+        # agent-subagents: .agents/agents/ directory exists
+        state.has_agent_subagents = (path / ".agents" / "agents").is_dir()
+        # agent-skills: .agents/skills/ or .agents/commands/ directory exists
+        state.has_agent_skills = (
+            (path / ".agents" / "skills").is_dir()
+            or (path / ".agents" / "commands").is_dir()
+        )
+        # legacy fallback: generic agents detection (keep for backward compat)
         state.has_agents = (
             (path / "CLAUDE.md").exists()
             or (path / "AGENTS.md").exists()
             or (path / ".claude").exists()
+            or state.has_agent_configuration
+            or state.has_agent_subagents
+            or state.has_agent_skills
         )
 
         # --- Layout detection ---
@@ -117,7 +135,18 @@ class ProjectState:
             state.installed_components.add("docs")
         if state.has_justfile:
             state.installed_components.add("justfile")
-        if state.has_agents:
+        if state.has_agent_configuration:
+            state.installed_components.add("agent-configuration")
+        if state.has_agent_subagents:
+            state.installed_components.add("agent-subagents")
+        if state.has_agent_skills:
+            state.installed_components.add("agent-skills")
+        # Keep generic fallback for projects bootstrapped before this change
+        if state.has_agents and not (
+            state.has_agent_configuration
+            or state.has_agent_subagents
+            or state.has_agent_skills
+        ):
             state.installed_components.add("agents")
 
         return state
@@ -138,4 +167,14 @@ class ProjectState:
             print(", ".join(sorted(self.installed_components)))
         else:
             print("none detected")
+        if self.has_agent_configuration or self.has_agent_subagents or self.has_agent_skills:
+            print(f"  Agent components: ", end="")
+            active = [
+                k for k, v in [
+                    ("configuration", self.has_agent_configuration),
+                    ("subagents", self.has_agent_subagents),
+                    ("skills", self.has_agent_skills),
+                ] if v
+            ]
+            print(", ".join(active) if active else "none")
         print()

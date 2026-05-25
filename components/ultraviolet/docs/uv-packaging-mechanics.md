@@ -2,7 +2,7 @@
 
 How the build pipeline works, what editable mode actually does, and why imports resolve the way they do. Open this file when debugging an import error or trying to understand a packaging behaviour from first principles.
 
-For layout decisions and "which structure should I use", see `packaging-structures.md`.
+For layout decisions and "which structure should I use", see `uv-packaging-structures.md`.
 
 ---
 

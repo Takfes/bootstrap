@@ -120,8 +120,13 @@ def _copy_files(
 
         dest = project_dir / dest_rel
 
+        # .agents/ subtree is always a merge target — use merge-skip messaging
+        in_agents = ".agents" in dest_rel.parts
         if dest.exists() and not overwrite:
-            print(f"    skip  {dest_rel}  (exists — use --overwrite to replace)")
+            if in_agents:
+                print(f"    merge-skip  {dest_rel}  (exists — use --overwrite to replace)")
+            else:
+                print(f"    skip  {dest_rel}  (exists — use --overwrite to replace)")
             continue
 
         dest.parent.mkdir(parents=True, exist_ok=True)
@@ -185,6 +190,7 @@ def _post_install(name: str, project_dir: Path) -> None:
         "uv": [["uv", "sync"]],
         "precommit": [["pre-commit", "install"]],
     }
+    # agent-configuration, agent-subagents, agent-skills: no post-install commands needed
     for cmd in commands.get(name, []):
         try:
             subprocess.run(cmd, cwd=project_dir, check=True, capture_output=True)

@@ -47,6 +47,8 @@ def _collect_context(
     ctx["python_version"] = python_version
     ctx["python_version_nodot"] = python_version.replace(".", "")
 
+    ctx["agent_name"] = _ask("AI assistant name (used in CLAUDE.md)", default="Claude")
+
     if extra:
         ctx.update(extra)
 

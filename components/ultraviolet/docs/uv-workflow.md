@@ -260,7 +260,7 @@ uv run python -c "import my_project; print(my_project.__file__)"
 4. Interpret the result:
    - Path points to your dev `src/` folder (from outside the project) → **editable install — normal for development.** `uv sync` defaults to editable mode, so this is the expected outcome. Changes to source are live.
    - Path points to `.venv/lib/.../site-packages/my_project` → non-editable copy installed. Changes to source are NOT live until you rebuild.
-   - Any path resolving to the project's source directory when run from *inside* the project → potential flat-layout import trap (see `packaging-mechanics.md`).
+   - Any path resolving to the project's source directory when run from *inside* the project → potential flat-layout import trap (see `uv-packaging-mechanics.md`).
 
 ### `uv publish`
 
