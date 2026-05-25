@@ -1,0 +1,125 @@
+# {{project_name}} — development commands
+#
+# BOOTSTRAP TEMPLATE NOTE:
+#   {{project_name}} and {{package_name}} are placeholders substituted by the bootstrap CLI.
+#   Do not run `just` commands in a freshly cloned template repo before substitution.
+#   The {{args}} in the `run` recipe IS valid just syntax (variadic argument).
+
+# List available commands (default)
+default:
+	@just --list
+
+# ── Setup & Environment ──────────────────────────────────────────────────────────────
+
+# Install all dependencies
+install:
+	uv sync --all-extras --dev
+
+# Upgrade all dependencies to their latest allowed versions
+update:
+	uv sync --upgrade --all-extras --dev
+
+# Update the lockfile without syncing the environment
+lock:
+	uv lock
+
+# Show Python version, venv path, and installed packages
+env:
+	@uv run python --version
+	@uv run python -c "import sys; print('Virtual env path:', sys.prefix)"
+	@echo "Installed packages:"
+	@uv run pip list
+
+# Reset the virtual environment — delete .venv and reinstall everything
+reset-env:
+	#!/usr/bin/env sh
+	printf "This will delete .venv and reinstall. Are you sure? [y/N] "
+	read ans
+	case "$ans" in
+	    [yY]*) rm -rf .venv && uv sync --all-extras --dev && pre-commit install --hook-type pre-commit --hook-type pre-push --hook-type commit-msg ;;
+	    *) echo "Aborted." ;;
+	esac
+
+# Remove build artefacts and cache directories
+clean:
+	rm -rf dist/ build/ htmlcov/ .coverage coverage.xml .pytest_cache .mypy_cache .ruff_cache
+
+# ── Run ────────────────────────────────────────────────────────────────────────────
+
+# Run the project (pass extra args after --)
+# BOOTSTRAP TEMPLATE: {{package_name}} is replaced by the bootstrap CLI before first use.
+run *args:
+	uv run python -m {{package_name}} {{args}}
+
+# ── Code Quality ───────────────────────────────────────────────────────────────
+
+# Lint (check only, no fixes)
+lint:
+	uv run ruff check src/ tests/
+	uv run ruff format --check src/ tests/
+
+# Fix lint issues (auto-fix)
+fix:
+	uv run ruff check --fix src/ tests/
+	uv run ruff format src/ tests/
+
+# Alias: format code (same as fix)
+format: fix
+
+# Type check
+typecheck:
+	uv run mypy src/
+
+# Check for unused/missing dependencies
+deps:
+	uv run deptry src/
+
+# ── Testing ───────────────────────────────────────────────────────────────────────────
+
+# Run tests
+test:
+	uv run pytest
+
+# Run tests with coverage report
+test-cov:
+	uv run pytest --cov --cov-report=html
+	@echo "Coverage report: htmlcov/index.html"
+
+# ── Pre-commit & Hooks ────────────────────────────────────────────────────────────
+
+# Install pre-commit hooks for all hook stages, then validate current state
+hooks:
+	pre-commit install --hook-type pre-commit --hook-type pre-push --hook-type commit-msg
+	pre-commit run --all-files
+
+# Run pre-commit on all files
+pre-commit:
+	pre-commit run --all-files
+
+# ── Quality Gates ───────────────────────────────────────────────────────────────────────
+
+# Run all checks (lint + typecheck + tests + deps) — full pre-PR validation
+check: lint typecheck test deps
+
+# Run exactly what CI runs (initially identical to check; diverge as needed)
+ci: lint typecheck test deps
+
+# ── Build ─────────────────────────────────────────────────────────────────────────────
+
+# Build the package (wheel + sdist)
+build:
+	uv build
+
+# ── Docs ──────────────────────────────────────────────────────────────────────────────
+
+# Build documentation (requires docs component: uv add --group docs mkdocs-material)
+docs-build:
+	uv run mkdocs build
+
+# Serve documentation locally with live reload
+docs-serve:
+	uv run mkdocs serve
+
+# Build docs and fail on any warning (use in CI)
+docs-test:
+	uv run mkdocs build -s
