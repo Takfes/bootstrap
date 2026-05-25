@@ -6,7 +6,7 @@ authors = [{ name = "{{author}}", email = "{{author_email}}" }]
 readme = "README.md"
 keywords = []
 requires-python = ">={{python_version}},<4"  # Update upper bound when Python 4 is released
-license = { text = "MIT" }
+license = { text = "{{license_type}}" }
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",

@@ -9,6 +9,7 @@ Entry points:
 
 import argparse
 import sys
+from datetime import date
 from pathlib import Path
 
 from . import __version__
@@ -48,6 +49,11 @@ def _collect_context(
     ctx["python_version_nodot"] = python_version.replace(".", "")
 
     ctx["agent_name"] = _ask("AI assistant name (used in CLAUDE.md)", default="Claude")
+
+    ctx["year"] = str(date.today().year)
+    ctx["license_type"] = _ask(
+        "License type (MIT/Apache/BSD/ISC/GPL)", default="MIT"
+    ).upper()
 
     if extra:
         ctx.update(extra)

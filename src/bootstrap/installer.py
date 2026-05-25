@@ -76,6 +76,8 @@ def install_component(
             # Special case: uv on an existing project — merge, don't overwrite
             if name == "uv" and (project_dir / "pyproject.toml").exists():
                 success = _merge_pyproject(result.path, project_dir, context)
+            elif name == "license":
+                success = _install_license(result.path, project_dir, context)
             else:
                 _copy_files(result.path, project_dir, context, overwrite=overwrite)
                 success = True
@@ -136,6 +138,36 @@ def _copy_files(
             dest.write_text(substitute(content, context), encoding="utf-8")
         except UnicodeDecodeError:
             shutil.copy2(src, dest)  # Binary file — copy as-is
+
+
+def _install_license(
+    component_dir: Path,
+    project_dir: Path,
+    context: dict[str, str],
+) -> bool:
+    """Select the chosen license file and install it as LICENSE.
+
+    Reads the LICENSE_{license_type} file from the component, applies template
+    substitution, and writes it as LICENSE in the project root.
+    """
+    license_type = context.get("license_type", "MIT").upper()
+    src = component_dir / f"LICENSE_{license_type}"
+    if not src.exists():
+        available = [p.name.replace("LICENSE_", "") for p in component_dir.glob("LICENSE_*")]
+        print(
+            f"  ✗ No license file for '{license_type}'. "
+            f"Available: {', '.join(sorted(available))}"
+        )
+        return False
+
+    dest = project_dir / "LICENSE"
+    if dest.exists():
+        print(f"    skip  LICENSE  (exists — use --overwrite to replace)")
+        return True
+
+    content = src.read_text(encoding="utf-8")
+    dest.write_text(substitute(content, context), encoding="utf-8")
+    return True
 
 
 def _merge_pyproject(
