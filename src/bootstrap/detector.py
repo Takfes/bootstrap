@@ -28,10 +28,12 @@ class ProjectState:
     has_dockerfile: bool = False
     has_mkdocs: bool = False
     has_justfile: bool = False
+    has_makefile: bool = False
     has_agents: bool = False
     has_agent_configuration: bool = False
     has_agent_subagents: bool = False
     has_agent_skills: bool = False
+    has_license: bool = False
 
     # Project structure
     layout: Layout = "unknown"
@@ -68,6 +70,7 @@ class ProjectState:
         state.has_justfile = (
             (path / "justfile").exists() or (path / "Justfile").exists()
         )
+        state.has_makefile = (path / "Makefile").exists()
         # agent-configuration: has CLAUDE.md AND .agents/rules/ directory
         state.has_agent_configuration = (
             (path / "CLAUDE.md").exists() and (path / ".agents" / "rules").is_dir()
@@ -88,6 +91,7 @@ class ProjectState:
             or state.has_agent_subagents
             or state.has_agent_skills
         )
+        state.has_license = (path / "LICENSE").exists()
 
         # --- Layout detection ---
         if (path / "src").is_dir():
@@ -135,6 +139,8 @@ class ProjectState:
             state.installed_components.add("docs")
         if state.has_justfile:
             state.installed_components.add("justfile")
+        if state.has_makefile:
+            state.installed_components.add("makefile")
         if state.has_agent_configuration:
             state.installed_components.add("agent-configuration")
         if state.has_agent_subagents:
@@ -148,6 +154,8 @@ class ProjectState:
             or state.has_agent_skills
         ):
             state.installed_components.add("agents")
+        if state.has_license:
+            state.installed_components.add("license")
 
         return state
 

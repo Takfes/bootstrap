@@ -36,3 +36,24 @@ description = "AI agent skills and commands: planning, brainstorming, web search
 repo_path = "components/agent-skills"
 requires = []
 optional = true
+
+[[components]]
+name = "license"
+description = "Project license file — choose from MIT, Apache 2.0, BSD 3-Clause, ISC, or GPL v3"
+repo_path = "components/license"
+requires = []
+optional = true
+
+[[components]]
+name = "justfile"
+description = "just task runner — cross-platform commands for install, lint, test, build, docs, and more"
+repo_path = "components/justfile"
+requires = []
+optional = true
+
+[[components]]
+name = "makefile"
+description = "GNU Make task runner — self-documenting Makefile for install, lint, test, build, docs, and more"
+repo_path = "components/makefile"
+requires = []
+optional = true
