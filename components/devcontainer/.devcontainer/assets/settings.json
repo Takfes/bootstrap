@@ -1,0 +1,91 @@
+{
+  // ====================
+  // Python Development Settings
+  // ====================
+  // Ensures when you run code interactively (e.g., using "Run Selection/Line in Python Terminal"),
+  // VSCode changes the working directory to the folder of the active Python file.
+  "python.terminal.executeInFileDir": true,
+  "python.analysis.autoImportCompletions": true,
+
+  // Python-specific editor configuration
+  "[python]": {
+    "editor.defaultFormatter": "charliermarsh.ruff",
+    "editor.formatOnSave": true,
+    "editor.rulers": [80],
+    "editor.wordWrap": "on"
+  },
+
+  // ====================
+  // Ruff Configuration
+  // ====================
+  // Enable Ruff for Python files and notebooks (rules configured in pyproject.toml)
+  "ruff.enable": true,
+
+  // ====================
+  // Code Actions & Formatting
+  // ====================
+  "editor.codeActionsOnSave": {
+    "source.fixAll": "explicit"
+  },
+
+  // ====================
+  // Jupyter Notebook Settings
+  // ====================
+  // Makes the Jupyter interactive window start in the directory of the current notebook or script.
+  "jupyter.notebookFileRoot": "${fileDirname}",
+  "jupyter.askForKernelRestart": false,
+  "jupyter.enableExtendedPythonKernelCompletions": true,
+
+  // Enable formatting for notebooks
+  "notebook.formatOnSave.enabled": true,
+  "notebook.codeActionsOnSave": {
+    "source.organizeImports": "explicit"
+  },
+  "notebook.output.textLineLimit": 50,
+  "notebook.output.wordWrap": true,
+
+  // ====================
+  // File Type Formatting
+  // ====================
+  // JSON formatting for project configuration files
+  "[json]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+
+  // ====================
+  // YAML Configuration
+  // ====================
+  "yaml.schemaStore.enable": true,
+
+  // ====================
+  // File Explorer Settings (Convenience)
+  // ====================
+  "explorer.confirmDelete": false,
+  "explorer.confirmDragAndDrop": false,
+
+  // ====================
+  // Security Settings (Convenience)
+  // ====================
+  "security.workspace.trust.untrustedFiles": "open",
+
+  // ====================
+  // Diff Editor Settings
+  // ====================
+  "diffEditor.ignoreTrimWhitespace": false,
+
+  // ====================
+  // Coding Agent Specific Settings
+  // ====================
+  "chat.mcp.discovery.enabled": {
+    "claude-desktop": false,
+    "windsurf": false,
+    "cursor-global": false,
+    "cursor-workspace": false
+  }, // Disable auto-discovery of MCP servers - if enabled, it will fetch servers from Claude
+  "chat.promptFiles": true,
+  "chat.promptFilesLocations": {
+    ".github/prompts": true
+  },
+  "github.copilot.chat.codeGeneration.useInstructionFiles": true,
+  "chat.mcp.autostart": "never"
+}

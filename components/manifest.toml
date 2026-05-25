@@ -64,3 +64,10 @@ description = "Project README.md with GitHub badges (CI, coverage, PyPI, Python,
 repo_path = "components/readme"
 requires = []
 optional = true
+
+[[components]]
+name = "devcontainer"
+description = "VSCode DevContainer: reproducible environment with Python, Kubernetes tools (kubectl, k9s, devspace, mirrord), MCP servers, and pre-configured shell aliases"
+repo_path = "components/devcontainer"
+requires = []
+optional = true
