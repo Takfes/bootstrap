@@ -57,3 +57,10 @@ description = "GNU Make task runner — self-documenting Makefile for install, l
 repo_path = "components/makefile"
 requires = []
 optional = true
+
+[[components]]
+name = "readme"
+description = "Project README.md with GitHub badges (CI, coverage, PyPI, Python, license), installation, and dev setup"
+repo_path = "components/readme"
+requires = []
+optional = true

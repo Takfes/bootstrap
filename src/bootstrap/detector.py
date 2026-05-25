@@ -29,6 +29,7 @@ class ProjectState:
     has_mkdocs: bool = False
     has_justfile: bool = False
     has_makefile: bool = False
+    has_readme: bool = False
     has_agents: bool = False
     has_agent_configuration: bool = False
     has_agent_subagents: bool = False
@@ -71,6 +72,7 @@ class ProjectState:
             (path / "justfile").exists() or (path / "Justfile").exists()
         )
         state.has_makefile = (path / "Makefile").exists()
+        state.has_readme = (path / "README.md").exists()
         # agent-configuration: has CLAUDE.md AND .agents/rules/ directory
         state.has_agent_configuration = (
             (path / "CLAUDE.md").exists() and (path / ".agents" / "rules").is_dir()
@@ -156,6 +158,8 @@ class ProjectState:
             state.installed_components.add("agents")
         if state.has_license:
             state.installed_components.add("license")
+        if state.has_readme:
+            state.installed_components.add("readme")
 
         return state
 
