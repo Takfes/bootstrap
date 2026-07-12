@@ -138,3 +138,9 @@ bootstrap new my-project
 # Or per-invocation
 bootstrap add agents --repo-url https://github.com/your-org/bootstrap.git
 ```
+
+---
+
+## Future Work
+
+- **Fragment-based file merging**: a `pyproject.fragment.toml` convention so components (e.g. mkdocs) can append a section (e.g. a `docs` dependency-group) into a pyproject.toml another component already created, instead of everything being bundled unconditionally into `uv`.
