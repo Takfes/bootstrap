@@ -105,6 +105,10 @@ def _copy_files(
     - Applies {{variable}} substitution to file *contents* and *paths*.
     - Strips ``.tmpl`` extension from destination filename.
     - Skips existing files unless overwrite=True.
+    - Files under a ``docs/`` folder are the exception: every component
+      contributes its docs into one shared project-level ``docs/`` folder,
+      so a same-named file there is always replaced (regardless of
+      overwrite) and the replacement is reported to the user.
     """
     for src in component_dir.rglob("*"):
         if src.is_dir():
@@ -121,10 +125,14 @@ def _copy_files(
             dest_rel = dest_rel.with_suffix("")
 
         dest = project_dir / dest_rel
+        existed = dest.exists()
 
         # .agents/ subtree is always a merge target — use merge-skip messaging
         in_agents = ".agents" in dest_rel.parts
-        if dest.exists() and not overwrite:
+        # docs/ is a shared target across components — always replace
+        in_docs = "docs" in dest_rel.parts
+
+        if existed and not overwrite and not in_docs:
             if in_agents:
                 print(f"    merge-skip  {dest_rel}  (exists — use --overwrite to replace)")
             else:
@@ -138,6 +146,9 @@ def _copy_files(
             dest.write_text(substitute(content, context), encoding="utf-8")
         except UnicodeDecodeError:
             shutil.copy2(src, dest)  # Binary file — copy as-is
+
+        if existed and in_docs:
+            print(f"    replace  {dest_rel}  (existing file overwritten)")
 
 
 def _install_license(
