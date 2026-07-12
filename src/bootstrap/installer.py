@@ -39,6 +39,31 @@ def substitute(text: str, context: dict[str, str]) -> str:
     return _VAR_RE.sub(_replace, text)
 
 
+# Patterns matching the checked-in default docstring/coverage threshold (80).
+# fail_under/fail-under can't use {{coverage_threshold}} directly: TOML
+# requires a bare number there, and the placeholder isn't valid unquoted
+# TOML syntax, while quoting it would hand coverage.py/interrogate a string
+# where they expect a number. Patching the known literal default instead
+# keeps the checked-in template file valid, parseable TOML/YAML as-is.
+_COVERAGE_THRESHOLD_RE = re.compile(
+    r"(?m)^(fail[_-]under\s*=\s*)80\b|--fail-under=80\b"
+)
+
+
+def _apply_coverage_threshold(content: str, context: dict[str, str]) -> str:
+    """Rewrite the default 80% coverage/docstring threshold to the chosen value."""
+    threshold = context.get("coverage_threshold")
+    if threshold is None or threshold == "80":
+        return content
+
+    def _replace(match: re.Match) -> str:
+        if match.group(1):
+            return f"{match.group(1)}{threshold}"
+        return f"--fail-under={threshold}"
+
+    return _COVERAGE_THRESHOLD_RE.sub(_replace, content)
+
+
 def install_component(
     name: str,
     project_dir: Path,
@@ -143,7 +168,9 @@ def _copy_files(
 
         try:
             content = src.read_text(encoding="utf-8")
-            dest.write_text(substitute(content, context), encoding="utf-8")
+            content = substitute(content, context)
+            content = _apply_coverage_threshold(content, context)
+            dest.write_text(content, encoding="utf-8")
         except UnicodeDecodeError:
             shutil.copy2(src, dest)  # Binary file — copy as-is
 

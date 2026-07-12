@@ -18,6 +18,17 @@ from .detector import ProjectState
 from .installer import install_component, get_template_repo
 
 
+# PyPI trove classifier for each supported license_type — keeps [project]
+# classifiers in pyproject.toml consistent with the actual LICENSE chosen.
+_LICENSE_CLASSIFIERS: dict[str, str] = {
+    "MIT": "License :: OSI Approved :: MIT License",
+    "APACHE": "License :: OSI Approved :: Apache Software License",
+    "BSD": "License :: OSI Approved :: BSD License",
+    "ISC": "License :: OSI Approved :: ISC License (ISCL)",
+    "GPL": "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+}
+
+
 # ---------------------------------------------------------------------------
 # Context helpers
 # ---------------------------------------------------------------------------
@@ -68,6 +79,14 @@ def _collect_context(
         ctx["license_type"] = _ask(
             "License type (MIT/Apache/BSD/ISC/GPL)", default="MIT"
         ).upper()
+        ctx["license_classifier"] = _LICENSE_CLASSIFIERS.get(
+            ctx["license_type"], _LICENSE_CLASSIFIERS["MIT"]
+        )
+
+    if ask_all or "coverage_threshold" in needed:
+        ctx["coverage_threshold"] = _ask(
+            "Minimum coverage threshold % (tests + docstrings)", default="80"
+        )
 
     if extra:
         ctx.update(extra)

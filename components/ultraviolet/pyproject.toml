@@ -13,7 +13,7 @@ requires-python = ">={{python_version}},<4"  # Update upper bound when Python 4 
 license = { text = "{{license_type}}" }
 classifiers = [
     "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: MIT License",
+    "{{license_classifier}}",
     "Operating System :: OS Independent",
 ]
 dependencies = []
