@@ -3,9 +3,10 @@
 # Adding a new component: create components/<name>/ and add an entry here.
 #
 # context_vars declares which interactively-prompted template variables a
-# component's files reference (e.g. {{author}}, {{license_type}}). It does
-# NOT include project_name/package_name/repo_name/year, which are always
-# derived from the project name and never gated behind component selection.
+# component's files reference (e.g. {{license_type}}, {{agent_name}}). It does
+# NOT include project_name/package_name/repo_name/year/author, which are
+# always available with a derived or default value and never gated behind
+# component selection (author defaults to a placeholder — see cli.py).
 # The CLI prompts only for the union of context_vars across selected
 # components — see _needed_context_vars() in src/bootstrap/cli.py.
 
@@ -14,7 +15,7 @@ name = "uv"
 description = "uv dependency management + pyproject.toml with all tool configs (ruff, mypy, deptry, pytest, coverage)"
 repo_path = "components/ultraviolet"
 requires = []
-context_vars = ["github_org", "author", "author_email", "description", "python_version", "license_type"]
+context_vars = ["github_org", "description", "python_version", "license_type"]
 optional = false
 
 [[components]]
@@ -38,7 +39,7 @@ name = "license"
 description = "Project license file — choose from MIT, Apache 2.0, BSD 3-Clause, ISC, or GPL v3"
 repo_path = "components/license"
 requires = []
-context_vars = ["author", "license_type"]
+context_vars = ["license_type"]
 optional = true
 
 [[components]]

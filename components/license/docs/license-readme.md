@@ -25,7 +25,7 @@ The license file is selected at install time based on the `license_type` variabl
 
 | Variable | Source | Example |
 |----------|--------|---------|
-| `{{author}}` | Prompted | `Jane Smith` |
+| `{{author}}` | Default placeholder (not prompted) | `Your Name` |
 | `{{year}}` | Auto (current year) | `2026` |
 | `{{license_type}}` | Prompted | `MIT` |
 

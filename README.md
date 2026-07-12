@@ -121,8 +121,7 @@ Component files use `{{variable}}` placeholders substituted at install time.
 | `package_name` | Derived — underscores, e.g. `my_project` |
 | `repo_name` | Derived — hyphens, e.g. `my-project` |
 | `github_org` | Auto-detected from git remote, else prompted |
-| `author` | Prompted |
-| `author_email` | Prompted |
+| `author` | Default placeholder — not prompted, edit `pyproject.toml`/LICENSE/mkdocs.yml by hand |
 | `description` | Prompted (optional) |
 | `python_version` | Prompted |
 

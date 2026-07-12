@@ -7,7 +7,8 @@
 - `{{package_name}}` — the importable Python package name (e.g. `my_library`)
 - `{{python_version}}` — version as `X.Y` (e.g. `3.12`)
 - `{{python_version_nodot}}` — version as `XY` (e.g. `312`)
-- `{{author}}`, `{{author_email}}`, `{{github_org}}` — project metadata
+- `{{github_org}}` — project metadata
+- Author name/email are static placeholders (`Your Name` / `you@example.com`), not prompted — update them by hand after scaffolding
 
 ---
 
@@ -43,7 +44,7 @@
 name = "{{repo_name}}"
 version = "0.1.0"
 description = "{{description}}"
-authors = [{ name = "{{author}}", email = "{{author_email}}" }]
+authors = [{ name = "Your Name", email = "you@example.com" }]  # update with your details
 readme = "README.md"
 keywords = []
 requires-python = ">={{python_version}},<4"  # Update upper bound when Python 4 is released

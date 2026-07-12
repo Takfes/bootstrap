@@ -44,16 +44,15 @@ def _collect_context(
     ctx["package_name"] = project_name.lower().replace("-", "_").replace(" ", "_")
     ctx["repo_name"] = project_name.lower().replace("_", "-").replace(" ", "-")
     ctx["year"] = str(date.today().year)
+    # Not prompted — kept as a placeholder default to remove signup friction.
+    # {{author}} still feeds LICENSE/mkdocs; update it by hand after scaffolding.
+    ctx["author"] = "Your Name"
 
     ask_all = needed is None
 
     if ask_all or "github_org" in needed:
         default_org = (state.github_org if state else None) or ""
         ctx["github_org"] = _ask("GitHub org/username", default=default_org)
-    if ask_all or "author" in needed:
-        ctx["author"] = _ask("Author name")
-    if ask_all or "author_email" in needed:
-        ctx["author_email"] = _ask("Author email")
     if ask_all or "description" in needed:
         ctx["description"] = _ask("One-line project description", default="")
 

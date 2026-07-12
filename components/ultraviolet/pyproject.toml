@@ -1,13 +1,12 @@
 # ═══════════════════════════════════════════════════════════════════════════
-# CORE — project metadata, always present regardless of which other
-# components are installed.
+# PROJECT METADATA
 # ═══════════════════════════════════════════════════════════════════════════
 
 [project]
 name = "{{repo_name}}"
 version = "0.1.0"
 description = "{{description}}"
-authors = [{ name = "{{author}}", email = "{{author_email}}" }]
+authors = [{ name = "name", email = "email@email.com" }]  # update with your details
 readme = "README.md"
 keywords = []
 requires-python = ">={{python_version}},<4"  # Update upper bound when Python 4 is released
@@ -23,8 +22,14 @@ dependencies = []
 Homepage = "https://github.com/{{github_org}}/{{repo_name}}"
 Repository = "https://github.com/{{github_org}}/{{repo_name}}"
 
+# Uncomment and adjust if this package should install a CLI command:
 # [project.scripts]
 # {{repo_name}} = "{{package_name}}.cli:main"
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# BUILD SYSTEM
+# ═══════════════════════════════════════════════════════════════════════════
 
 [build-system]
 requires = ["hatchling"]  # Installed by the build frontend in an isolated env; not needed in the venv
@@ -38,9 +43,7 @@ packages = ["src/{{package_name}}"]
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# DEV TOOLING — bundled with the uv component: lint, types, tests, coverage,
-# docstrings, spelling, dependency hygiene. Always installed with uv today;
-# not yet split into standalone opt-in components.
+# DEPENDENCIES
 # ═══════════════════════════════════════════════════════════════════════════
 
 [dependency-groups]
@@ -55,25 +58,22 @@ dev = [
     "codespell>=2.3",
     "tox-uv>=1.0",
 ]
-# ---- CONTINGENT: only useful if the `mkdocs` component is also installed ----
+# Only relevant if the `mkdocs` component is also installed
 docs = [
     "mkdocs>=1.6",
     "mkdocs-material>=9.5",
     "mkdocstrings[python]>=0.27",
 ]
-# ---- CONTINGENT: only useful for projects that use Jupyter notebooks ----
+# Only relevant for projects that use Jupyter notebooks
 notebooks = [
     "nbqa>=1.9",
     "ipykernel>=6.29",
 ]
 
-# [tool.uv.sources]
-# private-package = { index = "private-index" }
 
-# [[tool.uv.indexes]]
-# name = "private-index"
-# url = "https://pypi.example.com/simple/"
-# explicit = true
+# ═══════════════════════════════════════════════════════════════════════════
+# LINTING & FORMATTING (ruff)
+# ═══════════════════════════════════════════════════════════════════════════
 
 [tool.ruff]
 line-length = 100
@@ -118,6 +118,11 @@ ignore = [
 [tool.ruff.format]
 # preview = true  # Enables unstable rules; re-evaluate on each ruff release
 
+
+# ═══════════════════════════════════════════════════════════════════════════
+# TYPE CHECKING (mypy)
+# ═══════════════════════════════════════════════════════════════════════════
+
 [tool.mypy]
 python_version = "{{python_version}}"
 strict = true
@@ -130,6 +135,11 @@ warn_unused_configs = true
 mypy_path = ["src"]
 # src layout: packages = ["{{package_name}}"]
 packages = ["{{package_name}}"]
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# TESTING & COVERAGE (pytest)
+# ═══════════════════════════════════════════════════════════════════════════
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -145,6 +155,11 @@ omit = ["tests/*"]
 
 [tool.coverage.report]
 fail_under = 80
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# DOCSTRING COVERAGE (interrogate)
+# ═══════════════════════════════════════════════════════════════════════════
 
 [tool.interrogate]
 ignore-init-method = true   # class docstring covers __init__
@@ -162,22 +177,46 @@ quiet = false
 whitelist-regex = []
 color = true
 
+
+# ═══════════════════════════════════════════════════════════════════════════
+# SPELL CHECKING (codespell)
+# ═══════════════════════════════════════════════════════════════════════════
+
 [tool.codespell]
 skip = ".git,*.lock,*.toml,dist,build,.venv"
 # ignore-words-list = "exemple,woord"
 count = true
 quiet-level = 3
 
+
+# ═══════════════════════════════════════════════════════════════════════════
+# DEPENDENCY HYGIENE (deptry)
+# ═══════════════════════════════════════════════════════════════════════════
+
 [tool.deptry]
 root_packages = ["{{package_name}}"]
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# UV CONFIGURATION
+# ═══════════════════════════════════════════════════════════════════════════
 
 [tool.uv]
 # managed = true  # Uncomment to signal this project uses uv-managed Python
 # python-preference = "managed-only"  # Prefer uv-installed Pythons over system ones
 
+# Uncomment to pin a dependency to a private index instead of PyPI:
+# [tool.uv.sources]
+# private-package = { index = "private-index" }
+
+# [[tool.uv.indexes]]
+# name = "private-index"
+# url = "https://pypi.example.com/simple/"
+# explicit = true
+
 
 # ═══════════════════════════════════════════════════════════════════════════
-# CONTINGENT — opt-in extras, not required by the base uv setup.
+# MULTI-VERSION TESTING (tox) — opt-in, requires py311/py312/py313 installed
 # ═══════════════════════════════════════════════════════════════════════════
 
 [tool.tox]
