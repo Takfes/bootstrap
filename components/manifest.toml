@@ -1,12 +1,20 @@
 # Bootstrap component registry.
 # This file is the source of truth for all available template components.
 # Adding a new component: create components/<name>/ and add an entry here.
+#
+# context_vars declares which interactively-prompted template variables a
+# component's files reference (e.g. {{author}}, {{license_type}}). It does
+# NOT include project_name/package_name/repo_name/year, which are always
+# derived from the project name and never gated behind component selection.
+# The CLI prompts only for the union of context_vars across selected
+# components — see _needed_context_vars() in src/bootstrap/cli.py.
 
 [[components]]
 name = "uv"
 description = "uv dependency management + pyproject.toml with all tool configs (ruff, mypy, deptry, pytest, coverage)"
 repo_path = "components/ultraviolet"
 requires = []
+context_vars = ["github_org", "author", "author_email", "description", "python_version", "license_type"]
 optional = false
 
 [[components]]
@@ -14,6 +22,7 @@ name = "precommit"
 description = "pre-commit hooks (ruff-format, ruff-check, mypy, gitleaks, semgrep, conventional commits)"
 repo_path = "components/precommit"
 requires = ["uv"]
+context_vars = []
 optional = false
 
 [[components]]
@@ -21,6 +30,7 @@ name = "agent-config"
 description = "AI agent configuration: CLAUDE.md, behavioural rules, memory workflows"
 repo_path = "components/agent-config"
 requires = []
+context_vars = ["agent_name"]
 optional = true
 
 [[components]]
@@ -28,6 +38,7 @@ name = "license"
 description = "Project license file — choose from MIT, Apache 2.0, BSD 3-Clause, ISC, or GPL v3"
 repo_path = "components/license"
 requires = []
+context_vars = ["author", "license_type"]
 optional = true
 
 [[components]]
@@ -35,6 +46,7 @@ name = "justfile"
 description = "just task runner — cross-platform commands for install, lint, test, build, docs, and more"
 repo_path = "components/justfile"
 requires = []
+context_vars = []
 optional = true
 
 [[components]]
@@ -42,6 +54,7 @@ name = "makefile"
 description = "GNU Make task runner — self-documenting Makefile for install, lint, test, build, docs, and more"
 repo_path = "components/makefile"
 requires = []
+context_vars = []
 optional = true
 
 [[components]]
@@ -49,4 +62,5 @@ name = "devcontainer"
 description = "VSCode DevContainer: reproducible environment with Python, Kubernetes tools (kubectl, k9s, devspace, mirrord), MCP servers, and pre-configured shell aliases"
 repo_path = "components/devcontainer"
 requires = []
+context_vars = []
 optional = true

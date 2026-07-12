@@ -26,34 +26,49 @@ def _collect_context(
     project_name: str,
     *,
     state: ProjectState | None = None,
+    needed: set[str] | None = None,
     extra: dict[str, str] | None = None,
 ) -> dict[str, str]:
     """Gather template substitution variables interactively.
+
+    Only prompts for variables listed in `needed` — the union of context_vars
+    declared by the components the user selected (see _needed_context_vars).
+    Pass `needed=None` to ask everything (default, backward-compatible).
 
     Pre-fills known values from detected project state where available.
     """
     ctx: dict[str, str] = {}
 
+    # Always derived from the project name — never gated behind component selection.
     ctx["project_name"] = project_name
     ctx["package_name"] = project_name.lower().replace("-", "_").replace(" ", "_")
     ctx["repo_name"] = project_name.lower().replace("_", "-").replace(" ", "-")
-
-    default_org = (state.github_org if state else None) or ""
-    ctx["github_org"] = _ask("GitHub org/username", default=default_org)
-    ctx["author"] = _ask("Author name")
-    ctx["author_email"] = _ask("Author email")
-    ctx["description"] = _ask("One-line project description", default="")
-
-    python_version = _ask("Minimum Python version", default="3.11")
-    ctx["python_version"] = python_version
-    ctx["python_version_nodot"] = python_version.replace(".", "")
-
-    ctx["agent_name"] = _ask("AI assistant name (used in CLAUDE.md)", default="Claude")
-
     ctx["year"] = str(date.today().year)
-    ctx["license_type"] = _ask(
-        "License type (MIT/Apache/BSD/ISC/GPL)", default="MIT"
-    ).upper()
+
+    ask_all = needed is None
+
+    if ask_all or "github_org" in needed:
+        default_org = (state.github_org if state else None) or ""
+        ctx["github_org"] = _ask("GitHub org/username", default=default_org)
+    if ask_all or "author" in needed:
+        ctx["author"] = _ask("Author name")
+    if ask_all or "author_email" in needed:
+        ctx["author_email"] = _ask("Author email")
+    if ask_all or "description" in needed:
+        ctx["description"] = _ask("One-line project description", default="")
+
+    if ask_all or "python_version" in needed:
+        python_version = _ask("Minimum Python version", default="3.11")
+        ctx["python_version"] = python_version
+        ctx["python_version_nodot"] = python_version.replace(".", "")
+
+    if ask_all or "agent_name" in needed:
+        ctx["agent_name"] = _ask("AI assistant name (used in CLAUDE.md)", default="Claude")
+
+    if ask_all or "license_type" in needed:
+        ctx["license_type"] = _ask(
+            "License type (MIT/Apache/BSD/ISC/GPL)", default="MIT"
+        ).upper()
 
     if extra:
         ctx.update(extra)
@@ -136,6 +151,19 @@ def _resolve_dependencies(
     return resolved
 
 
+def _needed_context_vars(
+    names: list[str],
+    comp_map: dict[str, ComponentSpec],
+) -> set[str]:
+    """Union of context_vars declared by the given components."""
+    needed: set[str] = set()
+    for name in names:
+        spec = comp_map.get(name)
+        if spec is not None:
+            needed.update(spec.context_vars)
+    return needed
+
+
 def _confirm_overwrite_components(
     ordered: list[str],
     installed: set[str],
@@ -190,8 +218,7 @@ def cmd_new(args: argparse.Namespace) -> int:
 
     comp_map = {c.name: c for c in components}
 
-    # --- Collect context and select components ---
-    context = _collect_context(project_name, state=state)
+    # --- Select components ---
     if args.components:
         requested = args.components
     else:
@@ -209,6 +236,10 @@ def cmd_new(args: argparse.Namespace) -> int:
 
     # --- Resolve dependencies ---
     ordered = _resolve_dependencies(requested, comp_map)
+
+    # --- Collect context (only what the resolved components need) ---
+    needed_vars = _needed_context_vars(ordered, comp_map)
+    context = _collect_context(project_name, state=state, needed=needed_vars)
 
     # --- Overwrite confirmation ---
     overwrite_map = _confirm_overwrite_components(
@@ -266,8 +297,7 @@ def cmd_add(args: argparse.Namespace) -> int:
 
     comp_map = {c.name: c for c in components}
 
-    # --- Collect context and select components ---
-    context = _collect_context(project_name, state=state)
+    # --- Select components ---
     if args.components:
         requested = list(args.components)
     else:
@@ -282,6 +312,10 @@ def cmd_add(args: argparse.Namespace) -> int:
         print(f"✗ Unknown components: {', '.join(unknown)}")
         print("  Run 'bootstrap list' to see available components.")
         return 1
+
+    # --- Collect context (only what the requested components need) ---
+    needed_vars = _needed_context_vars(requested, comp_map)
+    context = _collect_context(project_name, state=state, needed=needed_vars)
 
     # --- Overwrite confirmation (--overwrite skips the prompt) ---
     overwrite_map = _confirm_overwrite_components(

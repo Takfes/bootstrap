@@ -61,6 +61,7 @@ def _parse_manifest(path: Path) -> list[ComponentSpec]:
                 repo_path=item["repo_path"],
                 requires=item.get("requires", []),
                 optional=item.get("optional", True),
+                context_vars=item.get("context_vars", []),
             )
         )
     return specs
