@@ -17,9 +17,9 @@ requires = ["uv"]
 optional = false
 
 [[components]]
-name = "agent-configuration"
+name = "agent-config"
 description = "AI agent configuration: CLAUDE.md, behavioural rules, memory workflows"
-repo_path = "components/agent-configuration"
+repo_path = "components/agent-config"
 requires = []
 optional = true
 
