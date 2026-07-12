@@ -1,3 +1,8 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# CORE — project metadata, always present regardless of which other
+# components are installed.
+# ═══════════════════════════════════════════════════════════════════════════
+
 [project]
 name = "{{repo_name}}"
 version = "0.1.0"
@@ -31,6 +36,13 @@ build-backend = "hatchling.build"
 # flat layout: packages = ["{{package_name}}"]
 packages = ["src/{{package_name}}"]
 
+
+# ═══════════════════════════════════════════════════════════════════════════
+# DEV TOOLING — bundled with the uv component: lint, types, tests, coverage,
+# docstrings, spelling, dependency hygiene. Always installed with uv today;
+# not yet split into standalone opt-in components.
+# ═══════════════════════════════════════════════════════════════════════════
+
 [dependency-groups]
 dev = [
     "ruff>=0.9",
@@ -43,11 +55,13 @@ dev = [
     "codespell>=2.3",
     "tox-uv>=1.0",
 ]
+# ---- CONTINGENT: only useful if the `mkdocs` component is also installed ----
 docs = [
     "mkdocs>=1.6",
     "mkdocs-material>=9.5",
     "mkdocstrings[python]>=0.27",
 ]
+# ---- CONTINGENT: only useful for projects that use Jupyter notebooks ----
 notebooks = [
     "nbqa>=1.9",
     "ipykernel>=6.29",
@@ -154,6 +168,18 @@ skip = ".git,*.lock,*.toml,dist,build,.venv"
 count = true
 quiet-level = 3
 
+[tool.deptry]
+root_packages = ["{{package_name}}"]
+
+[tool.uv]
+# managed = true  # Uncomment to signal this project uses uv-managed Python
+# python-preference = "managed-only"  # Prefer uv-installed Pythons over system ones
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# CONTINGENT — opt-in extras, not required by the base uv setup.
+# ═══════════════════════════════════════════════════════════════════════════
+
 [tool.tox]
 # Requires py311/py312/py313 to be installed: uv python install 3.11 3.12 3.13
 legacy_tox_ini = """
@@ -165,10 +191,3 @@ isolated_build = true
 extras = dev
 commands = pytest {posargs}
 """
-
-[tool.deptry]
-root_packages = ["{{package_name}}"]
-
-[tool.uv]
-# managed = true  # Uncomment to signal this project uses uv-managed Python
-# python-preference = "managed-only"  # Prefer uv-installed Pythons over system ones
