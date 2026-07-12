@@ -403,14 +403,14 @@ source = ["src/{{package_name}}"]
 omit = ["tests/*"]
 
 [tool.coverage.report]
-fail_under = 80
+fail_under = {{coverage_threshold}}
 ```
 
 > **Critical fix (PLAN.md item 3):** `source = ["src/{{package_name}}"]` includes the `src/` prefix. With a flat layout, this would be `["{{package_name}}"]`. The `src/` prefix is required for src layout — without it, coverage measures nothing and silently reports 0% or raises a `ModuleNotFoundError`.
 
 **`omit`** — prevents test files from inflating the coverage percentage.
 
-**`fail_under = 80`** — `pytest --cov` exits with a non-zero status if branch coverage falls below 80%. Adjust to match your team's policy. Remove this key entirely if you want coverage reporting without enforcement.
+**`fail_under = {{coverage_threshold}}`** — `pytest --cov` exits with a non-zero status if branch coverage falls below {{coverage_threshold}}%. Chosen at scaffold time; edit this value directly to change it later. Remove this key entirely if you want coverage reporting without enforcement.
 
 ---
 
@@ -427,7 +427,7 @@ ignore-property-decorators = false
 ignore-module = false
 ignore-nested-functions = false
 ignore-setters = false
-fail-under = 80
+fail-under = {{coverage_threshold}}
 verbose = 0
 quiet = false
 whitelist-regex = []
@@ -442,7 +442,7 @@ color = true
 
 **`ignore-magic = true`** — magic methods like `__repr__`, `__str__`, `__len__` have self-evident purpose from their names; docstrings add little value.
 
-**`fail-under = 80`** — same threshold pattern as coverage. Run `interrogate src/` to see the breakdown before adjusting.
+**`fail-under = {{coverage_threshold}}`** — same threshold pattern as coverage. Run `interrogate src/` to see the breakdown before adjusting.
 
 **Ruff `D` rules vs interrogate:** Ruff's `D` rules check docstring *style and format*; interrogate checks *presence*. The template uses interrogate for presence (simpler, focused) and omits `D` from ruff to avoid double-reporting.
 
