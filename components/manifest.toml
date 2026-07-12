@@ -65,3 +65,11 @@ repo_path = "components/devcontainer"
 requires = []
 context_vars = []
 optional = true
+
+[[components]]
+name = "mkdocs"
+description = "MkDocs + Material theme documentation site — dark/light mode, mkdocstrings API docs, git-revision-date"
+repo_path = "components/mkdocs"
+requires = ["uv"]
+context_vars = ["github_org", "description"]
+optional = true
