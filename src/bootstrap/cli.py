@@ -113,11 +113,18 @@ def _select_components_cli(components: list[ComponentSpec]) -> list[str]:
         print(f"  [{i:2}] {spec.name:<15}  {spec.description}{deps}")
     print()
     raw = input(
-        "Select components — space-separated numbers or names (e.g. '1 3 agents'): "
+        "Select components — space-separated numbers or names, 'all', "
+        "or 'i' to pick interactively (e.g. '1 3 agents'): "
     ).strip()
 
     if not raw:
         return []
+
+    if raw.lower() == "all":
+        return [spec.name for spec in components]
+
+    if raw.lower() == "i":
+        return _toggle_select(components)
 
     name_map = {spec.name: spec for spec in components}
     selected: list[str] = []
@@ -139,6 +146,28 @@ def _select_components_cli(components: list[ComponentSpec]) -> list[str]:
             seen.add(name)
 
     return selected
+
+
+def _toggle_select(components: list[ComponentSpec]) -> list[str]:
+    """Interactive toggle loop: type a number to flip it, empty input to confirm."""
+    picked = [False] * len(components)
+
+    while True:
+        print("\nToggle components (number to flip, empty to confirm):")
+        for i, spec in enumerate(components, 1):
+            mark = "x" if picked[i - 1] else " "
+            deps = f"  (needs: {', '.join(spec.requires)})" if spec.requires else ""
+            print(f"  [{mark}] {i:2}  {spec.name:<15}  {spec.description}{deps}")
+
+        raw = input("\nToggle #: ").strip()
+        if not raw:
+            break
+        if raw.isdigit() and 0 <= int(raw) - 1 < len(components):
+            picked[int(raw) - 1] = not picked[int(raw) - 1]
+        else:
+            print(f"  warning: '{raw}' is not a valid number — pick a listed index")
+
+    return [spec.name for spec, is_picked in zip(components, picked) if is_picked]
 
 
 def _resolve_dependencies(
