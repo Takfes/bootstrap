@@ -55,6 +55,8 @@ def _collect_context(
     ctx["package_name"] = project_name.lower().replace("-", "_").replace(" ", "_")
     ctx["repo_name"] = project_name.lower().replace("_", "-").replace(" ", "-")
     ctx["year"] = str(date.today().year)
+    # Not prompted — hardcoded default to remove signup friction.
+    ctx["agent_name"] = "Claude"
 
     ask_all = needed is None
 
@@ -72,9 +74,6 @@ def _collect_context(
         python_version = _ask("Minimum Python version", default="3.11")
         ctx["python_version"] = python_version
         ctx["python_version_nodot"] = python_version.replace(".", "")
-
-    if ask_all or "agent_name" in needed:
-        ctx["agent_name"] = _ask("AI assistant name (used in CLAUDE.md)", default="Claude")
 
     if ask_all or "license_type" in needed:
         ctx["license_type"] = _ask(
