@@ -8,7 +8,7 @@
 - `{{python_version}}` — version as `X.Y` (e.g. `3.12`)
 - `{{python_version_nodot}}` — version as `XY` (e.g. `312`)
 - `{{github_org}}` — project metadata
-- Author name/email are static placeholders (`Your Name` / `you@example.com`), not prompted — update them by hand after scaffolding
+- `{{author}}` / `{{author_email}}` — prompted at install time
 
 ---
 
@@ -44,7 +44,7 @@
 name = "{{repo_name}}"
 version = "0.1.0"
 description = "{{description}}"
-authors = [{ name = "Your Name", email = "you@example.com" }]  # update with your details
+authors = [{ name = "{{author}}", email = "{{author_email}}" }]
 readme = "README.md"
 keywords = []
 requires-python = ">={{python_version}},<4"  # Update upper bound when Python 4 is released

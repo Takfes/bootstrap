@@ -4,9 +4,8 @@
 #
 # context_vars declares which interactively-prompted template variables a
 # component's files reference (e.g. {{license_type}}, {{agent_name}}). It does
-# NOT include project_name/package_name/repo_name/year/author, which are
-# always available with a derived or default value and never gated behind
-# component selection (author defaults to a placeholder — see cli.py).
+# NOT include project_name/package_name/repo_name/year, which are always
+# available with a derived value and never gated behind component selection.
 # The CLI prompts only for the union of context_vars across selected
 # components — see _needed_context_vars() in src/bootstrap/cli.py.
 
@@ -15,7 +14,7 @@ name = "uv"
 description = "uv dependency management + pyproject.toml with all tool configs (ruff, mypy, deptry, pytest, coverage)"
 repo_path = "components/ultraviolet"
 requires = []
-context_vars = ["github_org", "description", "python_version", "license_type", "coverage_threshold"]
+context_vars = ["author", "author_email", "github_org", "description", "python_version", "license_type", "coverage_threshold"]
 optional = false
 
 [[components]]
@@ -39,7 +38,7 @@ name = "license"
 description = "Project license file — choose from MIT, Apache 2.0, BSD 3-Clause, ISC, or GPL v3"
 repo_path = "components/license"
 requires = []
-context_vars = ["license_type"]
+context_vars = ["author", "license_type"]
 optional = true
 
 [[components]]
@@ -71,5 +70,5 @@ name = "mkdocs"
 description = "MkDocs + Material theme documentation site — dark/light mode, mkdocstrings API docs, git-revision-date"
 repo_path = "components/mkdocs"
 requires = ["uv"]
-context_vars = ["github_org", "description"]
+context_vars = ["author", "github_org", "description"]
 optional = true

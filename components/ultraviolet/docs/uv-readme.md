@@ -40,8 +40,7 @@ Provides the Python project foundation: `pyproject.toml` and `.python-version`.
 | `{{python_version_nodot}}` | ruff `target-version` (e.g. `312` for 3.12) |
 | `{{package_name}}` | Importable package name — the directory created under `src/` |
 
-`[project] authors` is seeded with a static placeholder (`Your Name` /
-`you@example.com`), not prompted — update it by hand after scaffolding.
+`[project] authors` (`{{author}}` / `{{author_email}}`) is prompted at install time.
 
 ---
 
