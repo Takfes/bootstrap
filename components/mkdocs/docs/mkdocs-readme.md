@@ -4,12 +4,14 @@ Scaffolds a [MkDocs](https://www.mkdocs.org/) documentation site using the [Mate
 
 ## Files Delivered
 
-| File                | Purpose                                               |
-| ------------------- | ----------------------------------------------------- |
-| `mkdocs.yml`        | Main config: theme, nav, plugins, markdown extensions |
-| `docs/index.md`     | Home page stub                                        |
-| `docs/api.md`       | API reference stub (rendered by mkdocstrings)         |
-| `docs/changelog.md` | Changelog stub                                        |
+| File                        | Purpose                                               |
+| --------------------------- | ----------------------------------------------------- |
+| `mkdocs.yml`                | Main config: theme, nav, plugins, markdown extensions |
+| `mkdocs-pages/index.md`     | Home page stub                                        |
+| `mkdocs-pages/api.md`       | API reference stub (rendered by mkdocstrings)         |
+| `mkdocs-pages/changelog.md` | Changelog stub                                        |
+
+`mkdocs-pages/` is the site's `docs_dir` — deliberately separate from the project's `docs/` folder, which holds bootstrap's own component reference docs (`uv-readme.md`, `precommit-readme.md`, etc.). Keeping them apart means the built site only ever contains your actual pages, and reinstalling/upgrading the `mkdocs` component won't silently overwrite edits you've made to these stubs.
 
 ## Quick Start
 
@@ -64,7 +66,7 @@ nav:
       - Usage: guide/usage.md
 ```
 
-Create the corresponding `.md` files under `docs/`. For API pages, use:
+Create the corresponding `.md` files under `mkdocs-pages/`. For API pages, use:
 
 ```markdown
 # API Reference

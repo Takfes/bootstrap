@@ -3,7 +3,8 @@ repo_url: "https://github.com/{{github_org}}/{{repo_name}}"
 site_url: "https://{{github_org}}.github.io/{{repo_name}}"
 site_description: "{{description}}"
 site_author: "{{author}}"
-edit_uri: edit/main/docs/  # Change 'main' if your default branch has a different name
+docs_dir: mkdocs-pages  # kept separate from docs/, which holds bootstrap's own component reference docs
+edit_uri: edit/main/mkdocs-pages/  # Change 'main' if your default branch has a different name
 repo_name: "{{github_org}}/{{repo_name}}"
 copyright: 'Maintained by <a href="https://github.com/{{github_org}}">{{author}}</a>.'
 
