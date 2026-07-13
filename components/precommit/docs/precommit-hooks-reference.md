@@ -148,7 +148,7 @@ pre-commit run nbstripout --all-files
 
 Checks that every public function, class, and module has a docstring. Fails if coverage falls below the configured threshold.
 
-**Catches:** Missing docstrings on the public API surface. Configured at {{coverage_threshold}}% (`--fail-under={{coverage_threshold}}`). Ignores `__init__` methods, `__init__.py` module docstrings, and magic methods — the class docstring covers those.
+**Catches:** Missing docstrings on the public API surface. Configured at 80% (`--fail-under=80`). Ignores `__init__` methods, `__init__.py` module docstrings, and magic methods — the class docstring covers those.
 
 Lower the threshold for early-stage projects; raise it as the public API stabilises.
 
@@ -162,7 +162,7 @@ uv add --dev interrogate    # if not already present
 
 ```bash
 uv run interrogate src/ -vv               # verbose — shows exactly what's missing
-uv run interrogate src/ --fail-under={{coverage_threshold}}   # matches the configured threshold
+uv run interrogate src/ --fail-under=80   # matches the configured threshold
 ```
 
 ---

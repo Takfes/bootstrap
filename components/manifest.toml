@@ -14,7 +14,7 @@ name = "uv"
 description = "uv dependency management + pyproject.toml with all tool configs (ruff, mypy, deptry, pytest, coverage)"
 repo_path = "components/ultraviolet"
 requires = []
-context_vars = ["author", "author_email", "github_org", "description", "python_version", "license_type", "coverage_threshold"]
+context_vars = ["author", "author_email", "github_org", "description", "python_version", "license_type"]
 optional = false
 
 [[components]]
@@ -22,7 +22,7 @@ name = "precommit"
 description = "pre-commit hooks (ruff-format, ruff-check, mypy, gitleaks, semgrep, conventional commits)"
 repo_path = "components/precommit"
 requires = ["uv"]
-context_vars = ["coverage_threshold"]
+context_vars = []
 optional = false
 
 [[components]]

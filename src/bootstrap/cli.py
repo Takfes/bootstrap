@@ -83,11 +83,6 @@ def _collect_context(
             ctx["license_type"], _LICENSE_CLASSIFIERS["MIT"]
         )
 
-    if ask_all or "coverage_threshold" in needed:
-        ctx["coverage_threshold"] = _ask(
-            "Minimum coverage threshold % (tests + docstrings)", default="80"
-        )
-
     if extra:
         ctx.update(extra)
 
