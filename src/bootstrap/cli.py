@@ -52,7 +52,11 @@ def _collect_context(
 
     # Always derived from the project name — never gated behind component selection.
     ctx["project_name"] = project_name
-    ctx["package_name"] = project_name.lower().replace("-", "_").replace(" ", "_")
+    # Distribution name (PyPI/repo) vs. import name are independent concepts
+    # (e.g. `Pillow` installs, `PIL` imports) — prompted separately so they
+    # can diverge, with today's derivation as the default.
+    default_package_name = project_name.lower().replace("-", "_").replace(" ", "_")
+    ctx["package_name"] = _ask("Python package/import name", default=default_package_name)
     ctx["repo_name"] = project_name.lower().replace("_", "-").replace(" ", "-")
     ctx["year"] = str(date.today().year)
     # Not prompted — hardcoded default to remove signup friction.
