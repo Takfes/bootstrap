@@ -1,0 +1,229 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# PROJECT METADATA
+# ═══════════════════════════════════════════════════════════════════════════
+
+[project]
+name = "{{repo_name}}"
+version = "0.1.0"
+description = "{{description}}"
+authors = [{ name = "{{author}}", email = "{{author_email}}" }]
+readme = "README.md"
+keywords = []
+requires-python = ">={{python_version}},<4"  # Update upper bound when Python 4 is released
+license = { text = "{{license_type}}" }
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "{{license_classifier}}",
+    "Operating System :: OS Independent",
+]
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/{{github_org}}/{{repo_name}}"
+Repository = "https://github.com/{{github_org}}/{{repo_name}}"
+
+# Uncomment and adjust if this package should install a CLI command:
+# [project.scripts]
+# {{repo_name}} = "{{package_name}}.cli:main"
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# BUILD SYSTEM — src layout (src/{{package_name}}/)
+# ═══════════════════════════════════════════════════════════════════════════
+
+[build-system]
+requires = ["hatchling"]  # Installed by the build frontend in an isolated env; not needed in the venv
+build-backend = "hatchling.build"
+# Alternatives: setuptools, flit_core, pdm-backend
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/{{package_name}}"]
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# DEPENDENCIES
+# ═══════════════════════════════════════════════════════════════════════════
+
+[dependency-groups]
+dev = [
+    "ruff>=0.9",
+    "mypy>=1.14",
+    "deptry>=0.23",
+    "pytest>=8.3",
+    "pytest-cov>=6.0",
+    "pre-commit>=4.0",
+    "interrogate>=1.7",
+    "codespell>=2.3",
+    "tox-uv>=1.0",
+]
+# Only relevant if the `mkdocs` component is also installed
+docs = [
+    "mkdocs>=1.6",
+    "mkdocs-material>=9.5",
+    "mkdocstrings[python]>=0.27",
+]
+# Only relevant for projects that use Jupyter notebooks
+notebooks = [
+    "nbqa>=1.9",
+    "ipykernel>=6.29",
+]
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# LINTING & FORMATTING (ruff)
+# ═══════════════════════════════════════════════════════════════════════════
+
+[tool.ruff]
+line-length = 100
+target-version = "py{{python_version_nodot}}"
+exclude = [".venv", "dist", "build"]
+
+[tool.ruff.lint]
+# D (pydocstring) rules intentionally omitted — interrogate enforces docstring coverage
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # isort
+    "UP",   # pyupgrade
+    "B",    # flake8-bugbear
+    "A",    # flake8-builtins
+    "C4",   # flake8-comprehensions
+    "C90",  # mccabe complexity
+    "S",    # flake8-bandit (security)
+    "SIM",  # flake8-simplify
+    "TRY",  # tryceratops
+    "PGH",  # pygrep-hooks
+    "RUF",  # ruff-specific rules
+    "YTT",  # flake8-2020
+    "T10",  # flake8-debugger
+]
+ignore = [
+    "E501",   # line length — handled by the formatter, not the linter
+    "E731",   # lambda assignment — sometimes more readable than a def
+    "TRY003", # long messages outside exception class — too restrictive for library code
+    "TRY004", # prefer TypeError — breaks existing idioms
+    "SIM108", # ternary operator preference — not always more readable
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = [
+    "S101",  # assert statements are normal in tests
+    "S105",  # hardcoded password string — test fixtures use dummy credentials
+    "S106",  # hardcoded password in function arg — same reason
+]
+
+[tool.ruff.format]
+# preview = true  # Enables unstable rules; re-evaluate on each ruff release
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# TYPE CHECKING (mypy)
+# ═══════════════════════════════════════════════════════════════════════════
+
+[tool.mypy]
+python_version = "{{python_version}}"
+strict = true
+disallow_any_unimported = true  # strict doesn't cover this; prevents silent Any from missing stubs
+warn_unused_ignores = true      # surfaces stale type: ignore comments after upstream fixes
+show_error_codes = true         # enables targeted type: ignore[code] suppression
+no_implicit_optional = true     # None defaults must be explicitly typed as Optional[T]
+warn_return_any = true
+warn_unused_configs = true
+mypy_path = ["src"]
+packages = ["{{package_name}}"]
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# TESTING & COVERAGE (pytest)
+# ═══════════════════════════════════════════════════════════════════════════
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--cov --cov-report=term-missing --cov-report=xml"
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+]
+
+[tool.coverage.run]
+source = ["src/{{package_name}}"]
+omit = ["tests/*"]
+
+[tool.coverage.report]
+fail_under = 80
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# DOCSTRING COVERAGE (interrogate)
+# ═══════════════════════════════════════════════════════════════════════════
+
+[tool.interrogate]
+ignore-init-method = true   # class docstring covers __init__
+ignore-init-module = true   # __init__.py files rarely benefit from module docstrings
+ignore-magic = true         # __repr__, __str__ etc. are self-documenting by convention
+ignore-semiprivate = false  # set true to skip _private methods
+ignore-private = false      # set true to skip __dunder methods beyond magic
+ignore-property-decorators = false
+ignore-module = false
+ignore-nested-functions = false
+ignore-setters = false
+fail-under = 80
+verbose = 0
+quiet = false
+whitelist-regex = []
+color = true
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# SPELL CHECKING (codespell)
+# ═══════════════════════════════════════════════════════════════════════════
+
+[tool.codespell]
+skip = ".git,*.lock,*.toml,dist,build,.venv"
+# ignore-words-list = "exemple,woord"
+count = true
+quiet-level = 3
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# DEPENDENCY HYGIENE (deptry)
+# ═══════════════════════════════════════════════════════════════════════════
+
+[tool.deptry]
+root_packages = ["{{package_name}}"]
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# UV CONFIGURATION
+# ═══════════════════════════════════════════════════════════════════════════
+
+[tool.uv]
+# managed = true  # Uncomment to signal this project uses uv-managed Python
+# python-preference = "managed-only"  # Prefer uv-installed Pythons over system ones
+
+# Uncomment to pin a dependency to a private index instead of PyPI:
+# [tool.uv.sources]
+# private-package = { index = "private-index" }
+
+# [[tool.uv.indexes]]
+# name = "private-index"
+# url = "https://pypi.example.com/simple/"
+# explicit = true
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# MULTI-VERSION TESTING (tox) — opt-in, requires py311/py312/py313 installed
+# ═══════════════════════════════════════════════════════════════════════════
+
+[tool.tox]
+# Requires py311/py312/py313 to be installed: uv python install 3.11 3.12 3.13
+legacy_tox_ini = """
+[tox]
+envlist = py311, py312, py313
+isolated_build = true
+
+[testenv]
+extras = dev
+commands = pytest {posargs}
+"""

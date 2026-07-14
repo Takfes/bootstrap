@@ -14,7 +14,7 @@ name = "uv"
 description = "uv dependency management + pyproject.toml with all tool configs (ruff, mypy, deptry, pytest, coverage)"
 repo_path = "components/ultraviolet"
 requires = []
-context_vars = ["author", "author_email", "github_org", "description", "python_version", "license_type"]
+context_vars = ["author", "author_email", "github_org", "description", "python_version", "license_type", "layout"]
 optional = false
 
 [[components]]
@@ -70,5 +70,5 @@ name = "mkdocs"
 description = "MkDocs + Material theme documentation site — dark/light mode, mkdocstrings API docs, git-revision-date"
 repo_path = "components/mkdocs"
 requires = ["uv"]
-context_vars = ["author", "github_org", "description"]
+context_vars = ["author", "github_org", "description", "layout"]
 optional = true

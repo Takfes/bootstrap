@@ -20,7 +20,7 @@ plugins:
   - mkdocstrings:
       handlers:
         python:
-          paths: ["src/{{package_name}}"]
+          paths: ["{{package_src_path}}"]
 
 theme:
   name: material

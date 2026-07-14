@@ -75,6 +75,10 @@ def _collect_context(
         ctx["python_version"] = python_version
         ctx["python_version_nodot"] = python_version.replace(".", "")
 
+    if ask_all or "layout" in needed:
+        raw_layout = _ask("Package layout (flat/src)", default="src").strip().lower()
+        ctx["layout"] = raw_layout if raw_layout in ("flat", "src") else "src"
+
     if ask_all or "license_type" in needed:
         ctx["license_type"] = _ask(
             "License type (MIT/Apache/BSD/ISC/GPL)", default="MIT"
@@ -85,6 +89,14 @@ def _collect_context(
 
     if extra:
         ctx.update(extra)
+
+    # Derived from package_name + layout — computed unconditionally since
+    # mkdocstrings' source path needs it even when "layout" itself wasn't
+    # prompted (e.g. uv not selected), falling back to the src-layout default.
+    layout = ctx.get("layout", "src")
+    ctx["package_src_path"] = (
+        ctx["package_name"] if layout == "flat" else f"src/{ctx['package_name']}"
+    )
 
     return ctx
 

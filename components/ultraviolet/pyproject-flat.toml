@@ -28,7 +28,7 @@ Repository = "https://github.com/{{github_org}}/{{repo_name}}"
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# BUILD SYSTEM
+# BUILD SYSTEM — flat layout ({{package_name}}/ at project root)
 # ═══════════════════════════════════════════════════════════════════════════
 
 [build-system]
@@ -37,9 +37,7 @@ build-backend = "hatchling.build"
 # Alternatives: setuptools, flit_core, pdm-backend
 
 [tool.hatch.build.targets.wheel]
-# src layout: packages = ["src/{{package_name}}"]
-# flat layout: packages = ["{{package_name}}"]
-packages = ["src/{{package_name}}"]
+packages = ["{{package_name}}"]
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -132,8 +130,6 @@ show_error_codes = true         # enables targeted type: ignore[code] suppressio
 no_implicit_optional = true     # None defaults must be explicitly typed as Optional[T]
 warn_return_any = true
 warn_unused_configs = true
-mypy_path = ["src"]
-# src layout: packages = ["{{package_name}}"]
 packages = ["{{package_name}}"]
 
 
@@ -150,7 +146,7 @@ markers = [
 ]
 
 [tool.coverage.run]
-source = ["src/{{package_name}}"]
+source = ["{{package_name}}"]
 omit = ["tests/*"]
 
 [tool.coverage.report]

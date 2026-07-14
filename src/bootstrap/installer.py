@@ -18,6 +18,9 @@ from .fetcher import FetchError, fetch_component
 # Template variable pattern: {{variable_name}}
 _VAR_RE = re.compile(r"\{\{(\w+)\}\}")
 
+# Supported package layouts for the uv component's pyproject-{layout}.toml pair.
+_LAYOUTS = ("flat", "src")
+
 # Default template repo — override with BOOTSTRAP_TEMPLATE_REPO env var.
 # Points to THIS repo once published.
 DEFAULT_TEMPLATE_REPO = "https://github.com/Takfes/bootstrap.git"
@@ -37,6 +40,12 @@ def substitute(text: str, context: dict[str, str]) -> str:
         return context.get(match.group(1), match.group(0))
 
     return _VAR_RE.sub(_replace, text)
+
+
+def _resolve_layout(context: dict[str, str]) -> str:
+    """Return the selected package layout ('flat' or 'src'), defaulting to 'src'."""
+    layout = context.get("layout", "src")
+    return layout if layout in _LAYOUTS else "src"
 
 
 def install_component(
@@ -79,7 +88,7 @@ def install_component(
             elif name == "license":
                 success = _install_license(result.path, project_dir, context)
             else:
-                _copy_files(result.path, project_dir, context, overwrite=overwrite)
+                _copy_files(result.path, project_dir, context, name=name, overwrite=overwrite)
                 success = True
 
     except FetchError as e:
@@ -98,6 +107,7 @@ def _copy_files(
     project_dir: Path,
     context: dict[str, str],
     *,
+    name: str = "",
     overwrite: bool = False,
 ) -> None:
     """Copy all files from component_dir into project_dir.
@@ -109,16 +119,32 @@ def _copy_files(
       contributes its docs into one shared project-level ``docs/`` folder,
       so a same-named file there is always replaced (regardless of
       overwrite) and the replacement is reported to the user.
+    - For the ``uv`` component: ``pyproject-flat.toml``/``pyproject-src.toml``
+      are two complete variants — only the one matching context["layout"] is
+      installed, as ``pyproject.toml``. When layout is "flat", a leading
+      ``src`` path segment is stripped so the generated package skeleton
+      lands at the project root instead of under ``src/``.
     """
+    layout = _resolve_layout(context)
+    pyproject_variants = {f"pyproject-{lay}.toml": lay for lay in _LAYOUTS}
+
     for src in component_dir.rglob("*"):
         if src.is_dir():
             continue
 
         rel = src.relative_to(component_dir)
 
+        if name == "uv" and src.name in pyproject_variants:
+            if pyproject_variants[src.name] != layout:
+                continue  # not the selected layout's variant — skip entirely
+            rel = Path("pyproject.toml")
+
         # Substitute variables in each path segment
         substituted_parts = [substitute(p, context) for p in rel.parts]
         dest_rel = Path(*substituted_parts)
+
+        if name == "uv" and layout == "flat" and dest_rel.parts[:1] == ("src",):
+            dest_rel = Path(*dest_rel.parts[1:])
 
         # Strip .tmpl extension
         if dest_rel.suffix == ".tmpl":
@@ -191,10 +217,16 @@ def _merge_pyproject(
 
     Reads ``[tool.*]`` sections from the template and appends any that are
     missing from the existing file. Leaves existing content untouched.
+
+    Note: this path does not install the uv component's skeleton files
+    (src/{{package_name}}/__init__.py, tests/) — adding demo code as a side
+    effect of a config-only merge into an *existing* project would be a
+    surprising, out-of-scope change.
     """
-    template_file = component_dir / "pyproject.toml"
+    layout = _resolve_layout(context)
+    template_file = component_dir / f"pyproject-{layout}.toml"
     if not template_file.exists():
-        print("  ✗ No pyproject.toml found in uv component")
+        print(f"  ✗ No pyproject-{layout}.toml found in uv component")
         return False
 
     template_text = substitute(template_file.read_text(), context)
