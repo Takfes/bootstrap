@@ -158,11 +158,13 @@ Lower the threshold for early-stage projects; raise it as the public API stabili
 uv add --dev interrogate    # if not already present
 ```
 
-**Run manually:**
+**Run manually** (pass `tests` alongside the package path — scanning the package directory *alone*
+can report "no files found" once `ignore-init-module` excludes a package that's still just
+`__init__.py`; use `{{package_name}}` instead of `src` for flat layout):
 
 ```bash
-uv run interrogate src/ -vv               # verbose — shows exactly what's missing
-uv run interrogate src/ --fail-under=80   # matches the configured threshold
+uv run interrogate tests src -vv               # verbose — shows exactly what's missing
+uv run interrogate tests src --fail-under=80   # matches the configured threshold
 ```
 
 ---

@@ -118,13 +118,14 @@ Component files use `{{variable}}` placeholders substituted at install time.
 | Variable | Source |
 |----------|--------|
 | `project_name` | CLI argument |
-| `package_name` | Derived — underscores, e.g. `my_project` |
+| `package_name` | Prompted — defaults to the derived underscored form, e.g. `my_project` (can diverge from `repo_name`, like `Pillow`/`PIL`) |
 | `repo_name` | Derived — hyphens, e.g. `my-project` |
 | `github_org` | Auto-detected from git remote, else prompted |
 | `author` | Prompted (when `uv`, `license`, or `mkdocs` is selected) |
 | `author_email` | Prompted (when `uv` is selected) |
 | `description` | Prompted (optional) |
 | `python_version` | Prompted |
+| `layout` | Prompted (when `uv` or `mkdocs` is selected) — `flat` or `src`, defaults to `src` |
 
 ---
 

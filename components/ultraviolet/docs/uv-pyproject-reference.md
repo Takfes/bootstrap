@@ -4,7 +4,8 @@
 
 **Template placeholders** (substituted by the bootstrap CLI at generation time):
 - `{{repo_name}}` — the repository / distribution name (e.g. `my-library`)
-- `{{package_name}}` — the importable Python package name (e.g. `my_library`)
+- `{{package_name}}` — the importable Python package name (e.g. `my_library`) — prompted, independently of `{{repo_name}}`
+- `{{layout}}` — `flat` or `src`, prompted — selects which of the two complete `pyproject.toml` variants (`pyproject-flat.toml` / `pyproject-src.toml`) gets installed; this doc describes the `src` variant
 - `{{python_version}}` — version as `X.Y` (e.g. `3.12`)
 - `{{python_version_nodot}}` — version as `XY` (e.g. `312`)
 - `{{github_org}}` — project metadata
@@ -134,18 +135,23 @@ Switch backends by replacing both `requires` and `build-backend`. The rest of `p
 
 ```toml
 [tool.hatch.build.targets.wheel]
-# src layout: packages = ["src/{{package_name}}"]
-# flat layout: packages = ["{{package_name}}"]
 packages = ["src/{{package_name}}"]
 ```
 
 **`packages`** — tells hatchling which directories to include in the wheel. Without this, hatchling uses auto-discovery, which can include test files or other directories unintentionally.
 
-**src layout** (`src/my_package/`) — package lives one level deeper. The path must include the `src/` prefix: `["src/my_package"]`. This is the template default.
+**Layout is chosen at scaffold time, not by hand-editing this file.** The bootstrap CLI prompts for
+`{{layout}}` (`flat` or `src`, defaults to `src`) and installs one of two complete, pre-written
+`pyproject.toml` variants accordingly — this section, `[tool.mypy]`'s `mypy_path`, and
+`[tool.coverage.run]`'s `source` are the three places the two variants differ:
 
-**Flat layout** (`my_package/` at the root) — simpler directory structure but more risk of accidental imports during development. Use `["my_package"]` without the prefix.
+| | `src` layout | `flat` layout |
+|---|---|---|
+| `packages` | `["src/{{package_name}}"]` | `["{{package_name}}"]` |
+| Package location | `src/{{package_name}}/` | `{{package_name}}/` at project root |
 
-If you change the layout, update this setting and also `[tool.mypy]`, `[tool.coverage.run]`, and the pytest `--cov` configuration to match (see those sections below).
+If you want to switch layouts on an *existing* project after scaffolding, move the package
+directory and update all three settings by hand to match the table above.
 
 ---
 
@@ -351,11 +357,12 @@ no_implicit_optional = true     # None defaults must be explicitly typed as Opti
 warn_return_any = true
 warn_unused_configs = true
 mypy_path = ["src"]
-# src layout: packages = ["{{package_name}}"]
 packages = ["{{package_name}}"]
 ```
 
 > **Critical fix (PLAN.md item 2):** `mypy_path = ["src"]` is required for src layout. Without it, mypy looks for `{{package_name}}` at the project root and cannot find it. The combination of `mypy_path = ["src"]` + `packages = ["{{package_name}}"]` is correct: mypy_path extends the module search path, and packages names the package to check.
+>
+> **Layout note:** `mypy_path` only appears in the `src`-layout variant of this file — the `flat`-layout variant (see `pyproject-flat.toml`) omits it entirely, since the package already sits at the project root where mypy looks by default. `packages = ["{{package_name}}"]` is identical either way — it names the *importable* package, not a filesystem path.
 
 **`strict = true`** — enables a large set of checks including `disallow_untyped_defs`, `disallow_incomplete_defs`, `check_untyped_defs`, `no_implicit_reexport`, and others. See `mypy --help` for the full list.
 
@@ -406,7 +413,7 @@ omit = ["tests/*"]
 fail_under = 80
 ```
 
-> **Critical fix (PLAN.md item 3):** `source = ["src/{{package_name}}"]` includes the `src/` prefix. With a flat layout, this would be `["{{package_name}}"]`. The `src/` prefix is required for src layout — without it, coverage measures nothing and silently reports 0% or raises a `ModuleNotFoundError`.
+> **Critical fix (PLAN.md item 3):** `source = ["src/{{package_name}}"]` includes the `src/` prefix, required for src layout — without it, coverage measures nothing and silently reports 0% or raises a `ModuleNotFoundError`. The `flat`-layout variant of this file uses `["{{package_name}}"]` instead (no prefix) — this is one of the three settings that differ between the two `pyproject-*.toml` variants (see `[tool.hatch.build.targets.wheel]` above for the full list).
 
 **`omit`** — prevents test files from inflating the coverage percentage.
 
@@ -442,7 +449,7 @@ color = true
 
 **`ignore-magic = true`** — magic methods like `__repr__`, `__str__`, `__len__` have self-evident purpose from their names; docstrings add little value.
 
-**`fail-under = 80`** — same threshold pattern as coverage. Run `interrogate src/` to see the breakdown before adjusting.
+**`fail-under = 80`** — same threshold pattern as coverage. Run `interrogate tests src` (src layout) or `interrogate tests {{package_name}}` (flat layout) to see the breakdown before adjusting. Pass `tests` alongside the package path — pointing interrogate at the package directory *alone* can report "no files found" once `ignore-init-module` excludes the only file in a package that's still just `__init__.py`.
 
 **Ruff `D` rules vs interrogate:** Ruff's `D` rules check docstring *style and format*; interrogate checks *presence*. The template uses interrogate for presence (simpler, focused) and omits `D` from ruff to avoid double-reporting.
 
@@ -517,11 +524,12 @@ root_packages = ["{{package_name}}"]
 - **Transitive dependencies** — imported directly but only available because another package pulls them in (fragile — they can disappear when the parent package is updated)
 - **Misplaced dev dependencies** — dev tools accidentally listed in runtime `dependencies`
 
-**`root_packages`** — the package(s) deptry should scan. Points at the importable package name, not the directory path.
+**`root_packages`** — ⚠ **currently invalid config**, unrelated to layout — `deptry>=0.23` (the version pinned here) rejects this key outright (`invalid configuration options: ['root_packages']`), verified while updating these docs. deptry's actual CLI takes the scan directory as a positional `ROOT` argument, not this config key. Flagged separately; not fixed as part of the layout work.
 
-Run deptry manually or add it to a pre-commit hook:
+Run deptry manually or add it to a pre-commit hook, passing the layout-appropriate path as `ROOT`:
 ```bash
-uv run deptry src/
+uv run deptry src        # src layout — ROOT is a directory path, not the import name
+uv run deptry {{package_name}}   # flat layout
 ```
 
 Deptry complements `ruff` (`F401` catches unused imports at the file level) by checking the project-level dependency declaration.

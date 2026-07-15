@@ -1,6 +1,7 @@
 # uv Component
 
-Provides the Python project foundation: `pyproject.toml` and `.python-version`.
+Provides the Python project foundation: `pyproject.toml`, `.python-version`, and a real starter
+package + test so the project builds and passes immediately.
 
 ---
 
@@ -8,8 +9,10 @@ Provides the Python project foundation: `pyproject.toml` and `.python-version`.
 
 | File | What it is |
 |------|-----------|
-| `pyproject.toml` | The template — full project metadata, tool configs, dependency groups |
+| `pyproject-flat.toml` / `pyproject-src.toml` | Two complete variants — the one matching your `layout` choice is installed as `pyproject.toml`; the other is skipped entirely |
 | `.python-version` | Python version pin for uv (`{{python_version}}`) |
+| `src/{{package_name}}/__init__.py` | Starter package (a `main()` function) — installed at `src/{{package_name}}/` for `src` layout, or `{{package_name}}/` at the project root for `flat` layout |
+| `tests/test_main.py` | Matching test for the starter package |
 | `docs/uv-workflow.md` | uv commands and daily workflow reference |
 | `docs/uv-pyproject-reference.md` | Every `pyproject.toml` section annotated — what it does and why |
 | `docs/uv-packaging-structures.md` | How to structure a project — layouts, workspaces, extras, decision guide |
@@ -38,9 +41,10 @@ Provides the Python project foundation: `pyproject.toml` and `.python-version`.
 | `{{github_org}}` | GitHub URL prefix |
 | `{{python_version}}` | `requires-python`, mypy target, `.python-version` pin |
 | `{{python_version_nodot}}` | ruff `target-version` (e.g. `312` for 3.12) |
-| `{{package_name}}` | Importable package name — the directory created under `src/` |
+| `{{package_name}}` | Importable package name — prompted, defaults to the derived form (can diverge from `{{repo_name}}`, like `Pillow`/`PIL`) |
+| `{{layout}}` | `flat` or `src` — selects which `pyproject-*.toml` variant is installed and where the starter package lands |
 
-`[project] authors` (`{{author}}` / `{{author_email}}`) is prompted at install time.
+`[project] authors` (`{{author}}` / `{{author_email}}`) and `{{layout}}` are prompted at install time.
 
 ---
 
@@ -70,7 +74,7 @@ uv add --dev <pkg>        # add to dev group
 uv run pytest             # run inside managed venv
 uv run ruff check .       # lint
 uv run ruff format .      # format
-uv run mypy src/          # type-check
+uv run mypy .             # type-check (mypy resolves the package via [tool.mypy], regardless of layout)
 uv lock                   # regenerate uv.lock without installing
 uv build                  # produce dist/*.whl and dist/*.tar.gz
 ```

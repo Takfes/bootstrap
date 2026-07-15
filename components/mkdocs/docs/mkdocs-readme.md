@@ -34,7 +34,7 @@ These values are substituted when the component is bootstrapped:
 | `{{repo_name}}`    | Repo URL, site URL, PyPI link                     |
 | `{{description}}`  | `site_description`                                |
 | `{{author}}`       | `site_author`, copyright                          |
-| `{{package_name}}` | mkdocstrings source path (`src/{{package_name}}`) |
+| `{{package_src_path}}` | mkdocstrings source path — `src/{{package_name}}` or `{{package_name}}`, derived from the `uv` component's `layout` choice (flat/src) |
 
 ## Theme Features
 
