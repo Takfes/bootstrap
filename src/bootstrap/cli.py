@@ -15,7 +15,13 @@ from pathlib import Path
 from . import __version__
 from .components import ComponentSpec, get_component, get_components
 from .detector import ProjectState
-from .installer import install_component, get_template_repo
+from .installer import (
+    POST_INSTALL_COMMANDS,
+    components_with_post_install,
+    get_template_repo,
+    install_component,
+    run_post_install_commands,
+)
 
 
 # PyPI trove classifier for each supported license_type — keeps [project]
@@ -249,6 +255,27 @@ def _confirm_overwrite_components(
     return overwrite_map
 
 
+def _offer_post_install(names: list[str], project_dir: Path) -> bool:
+    """Ask once whether to run post-install commands for installed components.
+
+    Returns True if the commands were run (or there were none to run), False
+    if the user declined — the caller uses this to decide what to tell the
+    user to run manually.
+    """
+    relevant = components_with_post_install(names)
+    if not relevant:
+        return True
+
+    listed = ", ".join(
+        " ".join(cmd) for name in relevant for cmd in POST_INSTALL_COMMANDS[name]
+    )
+    answer = input(f"\nRun post-install commands now? ({listed}) [Y/n]: ").strip().lower()
+    if answer in ("", "y", "yes"):
+        run_post_install_commands(relevant, project_dir)
+        return True
+    return False
+
+
 # ---------------------------------------------------------------------------
 # Subcommand: new
 # ---------------------------------------------------------------------------
@@ -324,11 +351,21 @@ def cmd_new(args: argparse.Namespace) -> int:
         print(f"⚠  Completed with errors. Failed components: {', '.join(failed)}")
         return 1
 
+    # --- Post-install commands (uv sync, pre-commit install) ---
+    post_install_ran = _offer_post_install(ordered, project_dir)
+
     print(f"✓ Project '{project_name}' ready in {project_dir}/")
     print(f"\nNext steps:")
     print(f"  cd {project_dir}")
-    print(f"  uv sync")
-    print(f"  pre-commit install")
+    if not post_install_ran:
+        if "uv" in ordered:
+            print(f"  uv sync              # installs dependencies into .venv")
+        if "precommit" in ordered:
+            print(f"  pre-commit install   # enables checks on every commit")
+    if "justfile" in ordered:
+        print(f"  just --list          # see available dev commands")
+    if "makefile" in ordered:
+        print(f"  make help            # see available dev commands")
     return 0
 
 
@@ -399,6 +436,8 @@ def cmd_add(args: argparse.Namespace) -> int:
     if failed:
         print(f"⚠  Completed with errors. Failed: {', '.join(failed)}")
         return 1
+
+    _offer_post_install(requested, project_dir)
 
     print("✓ Done.")
     return 0

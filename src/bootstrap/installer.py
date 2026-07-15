@@ -96,7 +96,6 @@ def install_component(
         return False
 
     if success:
-        _post_install(name, project_dir)
         print(f"  ✓ Installed '{name}'")
 
     return success
@@ -260,17 +259,29 @@ def _merge_pyproject(
     return True
 
 
-def _post_install(name: str, project_dir: Path) -> None:
-    """Run any post-install commands for a component."""
-    commands: dict[str, list[list[str]]] = {
-        "uv": [["uv", "sync"]],
-        "precommit": [["pre-commit", "install"]],
-    }
-    # agent-configuration, agent-subagents, agent-skills: no post-install commands needed
-    for cmd in commands.get(name, []):
-        try:
-            subprocess.run(cmd, cwd=project_dir, check=True, capture_output=True)
-        except (subprocess.CalledProcessError, FileNotFoundError):
-            # Post-install commands are best-effort — don't fail the install
-            tool = cmd[0]
-            print(f"    note: '{tool}' not available — run manually when ready")
+# Components with commands to run once, after the full install completes —
+# see run_post_install_commands(). Components not listed here need none.
+POST_INSTALL_COMMANDS: dict[str, list[list[str]]] = {
+    "uv": [["uv", "sync"]],
+    "precommit": [["pre-commit", "install"]],
+}
+
+
+def components_with_post_install(names: list[str]) -> list[str]:
+    """Filter `names` down to those with a registered post-install command."""
+    return [name for name in names if name in POST_INSTALL_COMMANDS]
+
+
+def run_post_install_commands(names: list[str], project_dir: Path) -> None:
+    """Run post-install commands for the given installed components.
+
+    Best-effort: a missing tool or failed command doesn't abort the run —
+    it's reported so the user can run it manually instead.
+    """
+    for name in names:
+        for cmd in POST_INSTALL_COMMANDS.get(name, []):
+            try:
+                subprocess.run(cmd, cwd=project_dir, check=True, capture_output=True)
+            except (subprocess.CalledProcessError, FileNotFoundError):
+                tool = cmd[0]
+                print(f"    note: '{tool}' not available — run manually when ready")
