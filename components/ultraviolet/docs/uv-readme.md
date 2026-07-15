@@ -10,6 +10,7 @@ package + test so the project builds and passes immediately.
 | File | What it is |
 |------|-----------|
 | `pyproject-flat.toml` / `pyproject-src.toml` | Two complete variants — the one matching your `layout` choice is installed as `pyproject.toml`; the other is skipped entirely |
+| `README.md` | Project title + description (falls back to a placeholder sentence if left blank), install/dev quick start. Skipped if a `README.md` already exists. |
 | `.python-version` | Python version pin for uv (`{{python_version}}`) |
 | `src/{{package_name}}/__init__.py` | Starter package (a `main()` function) — installed at `src/{{package_name}}/` for `src` layout, or `{{package_name}}/` at the project root for `flat` layout |
 | `tests/test_main.py` | Matching test for the starter package |

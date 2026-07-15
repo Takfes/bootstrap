@@ -108,6 +108,13 @@ def _collect_context(
         ctx["package_name"] if layout == "flat" else f"src/{ctx['package_name']}"
     )
 
+    # description is an optional prompt — README.md gets a placeholder sentence
+    # instead of a blank line when it's left empty.
+    python_version = ctx.get("python_version", "3.11")
+    ctx["description_or_placeholder"] = (
+        ctx.get("description") or f"A new {python_version}+ Python project."
+    )
+
     return ctx
 
 
