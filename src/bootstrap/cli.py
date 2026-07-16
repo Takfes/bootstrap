@@ -13,7 +13,7 @@ from datetime import date
 from pathlib import Path
 
 from . import __version__
-from .components import ComponentSpec, get_component, get_components
+from .components import ComponentSpec, get_components
 from .detector import ProjectState
 from .installer import (
     POST_INSTALL_COMMANDS,
@@ -22,7 +22,6 @@ from .installer import (
     install_component,
     run_post_install_commands,
 )
-
 
 # PyPI trove classifier for each supported license_type — keeps [project]
 # classifiers in pyproject.toml consistent with the actual LICENSE chosen.
@@ -362,17 +361,17 @@ def cmd_new(args: argparse.Namespace) -> int:
     post_install_ran = _offer_post_install(ordered, project_dir)
 
     print(f"✓ Project '{project_name}' ready in {project_dir}/")
-    print(f"\nNext steps:")
+    print("\nNext steps:")
     print(f"  cd {project_dir}")
     if not post_install_ran:
         if "uv" in ordered:
-            print(f"  uv sync              # installs dependencies into .venv")
+            print("  uv sync              # installs dependencies into .venv")
         if "precommit" in ordered:
-            print(f"  pre-commit install   # enables checks on every commit")
+            print("  pre-commit install   # enables checks on every commit")
     if "justfile" in ordered:
-        print(f"  just --list          # see available dev commands")
+        print("  just --list          # see available dev commands")
     if "makefile" in ordered:
-        print(f"  make help            # see available dev commands")
+        print("  make help            # see available dev commands")
     return 0
 
 

@@ -13,7 +13,8 @@ class ComponentSpec:
     repo_path: str       # Path within the template repo, e.g. "components/uv"
     requires: list[str]  # Component names that must be present first
     optional: bool = True
-    context_vars: list[str] = field(default_factory=list)  # Template vars this component's files need prompted
+    # Template vars this component's files need prompted
+    context_vars: list[str] = field(default_factory=list)
 
 
 @lru_cache(maxsize=4)

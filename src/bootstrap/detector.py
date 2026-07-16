@@ -170,13 +170,13 @@ class ProjectState:
         print(f"  Layout:        {self.layout}")
         if self.github_org:
             print(f"  GitHub:        {self.github_org}/{self.github_repo_name}")
-        print(f"  Components installed: ", end="")
+        print("  Components installed: ", end="")
         if self.installed_components:
             print(", ".join(sorted(self.installed_components)))
         else:
             print("none detected")
         if self.has_agent_configuration or self.has_agent_subagents or self.has_agent_skills:
-            print(f"  Agent components: ", end="")
+            print("  Agent components: ", end="")
             active = [
                 k for k, v in [
                     ("configuration", self.has_agent_configuration),
