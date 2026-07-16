@@ -105,8 +105,11 @@ repos:
 
   # ── 🐍 Python: lint and format (ruff) ─────────────────────────────────────
   # Keep in sync with ruff version in pyproject.toml [dependency-groups.dev].
+  # Note: the `ruff-check` hook id was introduced in a later ruff-pre-commit
+  # release than v0.9.6 (that version only had a `ruff` id) — pin recent
+  # enough for `ruff-check` to exist, or use `pre-commit autoupdate`.
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: "v0.9.6"
+    rev: "v0.15.22"
     hooks:
       - id: ruff-check
         name: "🐍 Python · Lint and auto-fix code (ruff)"
