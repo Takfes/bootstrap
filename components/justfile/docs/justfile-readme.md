@@ -50,7 +50,7 @@ See the [makefile component](../../makefile/docs/makefile-readme.md) if you pref
 | `just fix` | `ruff check --fix` + `ruff format` — auto-fix all issues |
 | `just format` | Alias for `just fix` |
 | `just typecheck` | `uv run mypy src/` |
-| `just deps` | `uv run deptry src/` — check for unused/missing dependencies |
+| `just deps` | `uv run deptry .` — check for unused/missing dependencies |
 
 ### Testing
 

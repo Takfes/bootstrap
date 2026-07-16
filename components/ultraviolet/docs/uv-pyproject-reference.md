@@ -513,10 +513,11 @@ commands = pytest {posargs}
 
 ## `[tool.deptry]`
 
-```toml
-[tool.deptry]
-root_packages = ["{{package_name}}"]
-```
+deptry has **no `pyproject.toml` config in this template** — its scan root is
+always a CLI positional argument, not a config key. (An earlier version of
+this template shipped an invalid `root_packages = [...]` key here; deptry
+rejects unknown keys outright, so every scaffold's `deptry` invocation
+hard-errored. That key has been removed.)
 
 **What deptry checks:** scans your source code and `pyproject.toml` to detect:
 - **Missing dependencies** — imported in code but not listed in `[project.dependencies]`
@@ -524,12 +525,14 @@ root_packages = ["{{package_name}}"]
 - **Transitive dependencies** — imported directly but only available because another package pulls them in (fragile — they can disappear when the parent package is updated)
 - **Misplaced dev dependencies** — dev tools accidentally listed in runtime `dependencies`
 
-**`root_packages`** — ⚠ **currently invalid config**, unrelated to layout — `deptry>=0.23` (the version pinned here) rejects this key outright (`invalid configuration options: ['root_packages']`), verified while updating these docs. deptry's actual CLI takes the scan directory as a positional `ROOT` argument, not this config key. Flagged separately; not fixed as part of the layout work.
-
-Run deptry manually or add it to a pre-commit hook, passing the layout-appropriate path as `ROOT`:
+**Invocation** — scan the whole project (`.`) rather than a layout-specific
+path; deptry walks the tree and finds your source either way, so this stays
+correct across both layouts with no templating needed:
 ```bash
-uv run deptry src        # src layout — ROOT is a directory path, not the import name
-uv run deptry {{package_name}}   # flat layout
+uv run deptry .
 ```
+This is how it's wired up in the `justfile`'s `deps` target, the `Makefile`'s
+`deptry` target, and the pre-commit hook (deptry's own default entry is
+`deptry .`).
 
 Deptry complements `ruff` (`F401` catches unused imports at the file level) by checking the project-level dependency declaration.

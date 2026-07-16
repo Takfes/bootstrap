@@ -190,8 +190,9 @@ quiet-level = 3
 # DEPENDENCY HYGIENE (deptry)
 # ═══════════════════════════════════════════════════════════════════════════
 
-[tool.deptry]
-root_packages = ["{{package_name}}"]
+# deptry takes no pyproject.toml config here — its scan root is a CLI
+# positional argument (`deptry .`), already wired up in the justfile,
+# Makefile, and the pre-commit hook.
 
 
 # ═══════════════════════════════════════════════════════════════════════════

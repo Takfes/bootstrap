@@ -84,7 +84,7 @@ interrogate: ## Check docstring coverage
 .PHONY: deptry
 deptry: ## Analyse dependencies for unused/missing packages
 	@echo "Running deptry"
-	@uv run deptry src/
+	@uv run deptry .
 
 .PHONY: typecheck
 typecheck: ## Run mypy static type checker

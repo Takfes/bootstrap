@@ -268,8 +268,8 @@ uv add --dev deptry    # if not already present
 **Run manually:**
 
 ```bash
-uv run deptry src/
-uv run deptry src/ --ignore DEP002    # same as the hook default
+uv run deptry .
+uv run deptry . --ignore DEP002    # same as the hook default
 ```
 
 ---

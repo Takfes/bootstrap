@@ -56,7 +56,7 @@ Both must be on your `PATH` before any target will work:
 | `make ruff-format` | Run ruff formatter check on `src/` and `tests/` |
 | `make fix` | Auto-fix lint issues (`ruff check --fix` + `ruff format`) |
 | `make interrogate` | Check docstring coverage (`interrogate`) |
-| `make deptry` | Analyse dependencies (`deptry src/`) |
+| `make deptry` | Analyse dependencies (`deptry .`) |
 | `make typecheck` | Run mypy static type checker |
 | `make lint` | `ruff-check` + `ruff-format` + `interrogate` + `deptry` |
 
