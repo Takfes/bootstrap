@@ -18,6 +18,11 @@ from .fetcher import FetchError, fetch_component
 # Template variable pattern: {{variable_name}}
 _VAR_RE = re.compile(r"\{\{(\w+)\}\}")
 
+# TOML triple-quoted string bodies (used by _merge_pyproject to mask out
+# embedded content, e.g. an inline tox.ini, before scanning for [tool.*]
+# section boundaries).
+_MULTILINE_STRING_RE = re.compile(r'""".*?"""|\'\'\'.*?\'\'\'', re.DOTALL)
+
 # Supported package layouts for the uv component's pyproject-{layout}.toml pair.
 _LAYOUTS = ("flat", "src")
 
@@ -234,11 +239,27 @@ def _merge_pyproject(
 
     # Extract [tool.*] sections from template using simple text splitting.
     # Each section runs from its header to the next top-level header or EOF.
+    # The lookahead anchors on a `[` at the *start of a line* — not just any
+    # `[` — so array values within the section (e.g. `packages = ["src/x"]`,
+    # `exclude = [...]`) don't prematurely end the match.
+    #
+    # Section boundaries are found on a *masked* copy of the text, where
+    # triple-quoted string bodies (e.g. `legacy_tox_ini = """..."""`, which
+    # embeds a whole tox.ini including its own `[tox]`/`[testenv]` lines) are
+    # blanked out character-for-character. That keeps every offset aligned
+    # with the original text, so an embedded line that merely looks like a
+    # table header can't be mistaken for a real section boundary — the
+    # matched spans are then sliced out of the real, unmasked text.
+    masked_text = _MULTILINE_STRING_RE.sub(
+        lambda m: "x" * len(m.group(0)), template_text
+    )
     section_re = re.compile(
-        r"^(\[tool\.[^\]]+\][^\[]*)",
+        r"^(\[tool\.[^\]]+\].*?)(?=^\[|\Z)",
         re.MULTILINE | re.DOTALL,
     )
-    template_sections = section_re.findall(template_text)
+    template_sections = [
+        template_text[m.start() : m.end()] for m in section_re.finditer(masked_text)
+    ]
 
     added: list[str] = []
     for section in template_sections:
