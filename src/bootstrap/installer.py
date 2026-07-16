@@ -9,7 +9,6 @@ import os
 import re
 import shutil
 import subprocess
-import tomllib
 from pathlib import Path
 
 from .components import get_component
@@ -204,7 +203,7 @@ def _install_license(
 
     dest = project_dir / "LICENSE"
     if dest.exists():
-        print(f"    skip  LICENSE  (exists — use --overwrite to replace)")
+        print("    skip  LICENSE  (exists — use --overwrite to replace)")
         return True
 
     content = src.read_text(encoding="utf-8")
