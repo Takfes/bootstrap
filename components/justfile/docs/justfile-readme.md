@@ -22,6 +22,15 @@ See the [makefile component](../../makefile/docs/makefile-readme.md) if you pref
 
 ---
 
+## Prerequisites
+
+Both must be on your `PATH` before any recipe will work:
+
+- [`uv`](https://docs.astral.sh/uv/) — Python package and project manager
+- [`pre-commit`](https://pre-commit.com/) — required for `hooks`, `validate`, `gitleaks`, `file-checks`, and `clean-cache`
+
+---
+
 ## Commands Reference
 
 ### Setup & Environment
@@ -29,55 +38,69 @@ See the [makefile component](../../makefile/docs/makefile-readme.md) if you pref
 | Command | Description |
 |---------|-------------|
 | `just` (default) | List all available commands |
-| `just install` | `uv sync --all-extras --dev` — install all dependencies |
+| `just install` | `uv sync --all-extras --dev` + install pre-commit hooks |
 | `just update` | `uv sync --upgrade --all-extras --dev` — upgrade all deps to latest allowed versions |
 | `just lock` | `uv lock` — regenerate lockfile without syncing |
-| `just env` | Show Python version, venv path, and installed packages |
-| `just reset-env` | Delete `.venv` and reinstall everything (prompts for confirmation) |
-| `just clean` | Remove `dist/`, `build/`, `htmlcov/`, cache dirs |
-
-### Run
-
-| Command | Description |
-|---------|-------------|
-| `just run [args...]` | `uv run python -m {{package_name}} [args]` — run the project |
+| `just venv` | Show Python version, venv path, and installed packages |
+| `just reset-venv` | Delete `.venv` and reinstall everything (prompts for confirmation) |
+| `just clean-cache` | Remove cache and temporary files (via pre-commit hook) |
+| `just clean` | Remove all generated artefacts (`.venv`, `dist`, caches, coverage) — runs `clean-build` first |
 
 ### Code Quality
 
 | Command | Description |
 |---------|-------------|
-| `just lint` | `ruff check` + `ruff format --check` — lint, no fixes |
+| `just ruff-check` | Run ruff linter on `src/` and `tests/` |
+| `just ruff-format` | Run ruff formatter check on `src/` and `tests/` |
 | `just fix` | `ruff check --fix` + `ruff format` — auto-fix all issues |
 | `just format` | Alias for `just fix` |
-| `just typecheck` | `uv run mypy src/` |
-| `just deps` | `uv run deptry .` — check for unused/missing dependencies |
+| `just interrogate` | Check docstring coverage (`interrogate`) |
+| `just deptry` | Analyse dependencies (`deptry .`) |
+| `just typecheck` | `uv run mypy` |
+| `just lint` | `ruff-check` + `ruff-format` + `interrogate` + `deptry` |
+
+### Security & Validation
+
+| Command | Description |
+|---------|-------------|
+| `just gitleaks` | Scan for hardcoded secrets (via pre-commit) |
+| `just file-checks` | Run all file validation checks (via pre-commit) |
+| `just validate` | `file-checks` + `gitleaks` + `clean-cache` |
 
 ### Testing
 
 | Command | Description |
 |---------|-------------|
 | `just test` | `uv run pytest` |
-| `just test-cov` | `uv run pytest --cov --cov-report=html` + open hint |
+| `just test-cov` | `uv run pytest --cov --cov-report=term-missing --cov-report=html` |
 
 ### Pre-commit & Hooks
 
 | Command | Description |
 |---------|-------------|
-| `just hooks` | Install pre-commit for all stages, then run all hooks |
-| `just pre-commit` | `pre-commit run --all-files` — run all hooks against entire repo |
+| `just pre-commit-staged` | Run pre-commit hooks on currently staged files |
+| `just pre-commit-all` | Run pre-commit hooks on all files in the repo |
+| `just hooks` | All hooks consolidated: `lint` + `validate` |
 
 ### Quality Gates
 
 | Command | Description |
 |---------|-------------|
-| `just check` | `lint` + `typecheck` + `test` + `deps` — full pre-PR validation |
+| `just check` | Full quality gate: lock check + pre-commit (all files) + mypy + tests |
 | `just ci` | Same as `check`; separate recipe so CI divergence stays explicit |
 
 ### Build
 
 | Command | Description |
 |---------|-------------|
-| `just build` | `uv build` — build wheel and sdist |
+| `just clean-build` | Remove build artefacts (`dist/`, `build/`) |
+| `just build` | `uv build` — build wheel and sdist (runs `clean-build` first) |
+
+### Run
+
+| Command | Description |
+|---------|-------------|
+| `just run [args...]` | `uv run python -m {{package_name}} [args]` — run the project |
 
 ### Docs
 
@@ -118,7 +141,7 @@ pip install rust-just
 
 ## Dependencies
 
-None. Works standalone after `just install` has run.
+None for most recipes. `gitleaks`, `file-checks`, `clean-cache`, `pre-commit-staged`, and `pre-commit-all` require pre-commit to be installed and configured in `.pre-commit-config.yaml`.
 
 ## Usage
 

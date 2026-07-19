@@ -39,14 +39,7 @@ Both must be on your `PATH` before any target will work:
 | `make venv` | Show Python version, venv path, and installed packages |
 | `make reset-venv` | Delete `.venv` and reinstall everything (prompts for confirmation) |
 | `make clean-cache` | Remove cache and temporary files (via pre-commit hook) |
-| `make clean-build` | Remove build artefacts (`dist/`) |
-| `make clean` | Remove all generated artefacts (`.venv`, `dist`, caches, coverage) |
-
-### Run
-
-| Target | Description |
-|--------|-------------|
-| `make run` | `uv run python -m $(PACKAGE_NAME)` — run the project |
+| `make clean` | Remove all generated artefacts (`.venv`, `dist`, caches, coverage) — runs `clean-build` first |
 
 ### Code Quality
 
@@ -93,7 +86,14 @@ Both must be on your `PATH` before any target will work:
 
 | Target | Description |
 |--------|-------------|
+| `make clean-build` | Remove build artefacts (`dist/`) |
 | `make build` | Build wheel and sdist (runs `clean-build` first) |
+
+### Run
+
+| Target | Description |
+|--------|-------------|
+| `make run` | `uv run python -m $(PACKAGE_NAME)` — run the project |
 
 ### Docs
 
