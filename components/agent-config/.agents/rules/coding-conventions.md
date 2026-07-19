@@ -1,95 +1,84 @@
-# Coding Conventions
+---
+paths:
+  - "**/*.py"
+  - "**/*.sh"
+  - "**/*.sql"
+  - "**/*.js"
+  - "**/*.ts"
+  - "**/*.jsx"
+  - "**/*.tsx"
+  - "**/pyproject.toml"
+  - "**/requirements*.txt"
+  - "**/package.json"
+  - "**/Cargo.toml"
+  - "**/go.mod"
+  - "**/Gemfile"
+---
 
-## Python
-- Primary language: Python 3.x
-- Use type hints for all function signatures and class attributes
-- Prefer f-strings over `.format()` or `%`
-- Naming: `snake_case` for functions/variables, `PascalCase` for classes, `UPPER_CASE` for constants
-- Organize imports: stdlib → third-party → local (blank line between each group)
+## Before Writing Code
 
-## Code Style
+- State assumptions explicitly; if uncertain, ask rather than guess.
+- If multiple interpretations exist, present them — don't pick silently.
+- If a simpler approach exists, say so and push back when warranted.
 
-**Docstrings:** All public functions, classes, and modules — Google-style format:
-```python
-def fetch_results(query: str, limit: int = 10) -> list[dict]:
-    """Fetch search results for a query.
+## Simplicity & Scope
 
-    Args:
-        query: The search string to look up.
-        limit: Maximum number of results to return.
+- Minimum code that solves the problem — no speculative features, no unrequested flexibility/configurability, no error handling for impossible scenarios.
 
-    Returns:
-        A list of result dicts, each with keys 'title', 'url', 'snippet'.
+## Before Adding Code
 
-    Raises:
-        ValueError: If query is empty.
-        HTTPError: If the upstream API returns a non-2xx status.
-    """
-```
+Before writing something new, check in order — stop at the first that solves it: is it necessary at all (YAGNI) → does it already exist in this codebase → standard library → a dependency already installed → a one-liner. Only write new code once those are exhausted.
 
-- Add inline comments for non-obvious logic — not for what the code does, but why
-- Keep functions focused and single-purpose; if a function needs a "and" in its description, split it
+## Complexity Smells
+
+Watch for: single-implementation abstractions (an interface, factory, or strategy with exactly one real case), thin wrappers that just delegate, deep inheritance or indirection chains, god objects (too many responsibilities), long functions, deep nesting, magic numbers, code built for "future needs" that aren't here yet. Prefer readability over cleverness; keep related code together.
+
+Don't apply this to: untested legacy code, measured performance-critical paths, code about to be replaced soon, or complexity required by an external constraint.
+
+## Surgical Editing
+
+- Touch only what the task requires. Don't "improve" adjacent code, comments, or formatting. Don't refactor things that aren't broken. Match existing style even if you'd do it differently.
+- Remove imports/variables/functions your own changes made unused. Leave pre-existing dead code alone — mention it, don't delete it, unless asked.
+- Every changed line should trace directly to the request.
+
+## Documentation & Readability
+
+- Public functions, classes, and modules get a docstring covering purpose, parameters, return value, and error conditions, in the language's idiomatic format.
+- Inline comments explain _why_, not _what_ — skip comments that just restate the code.
+- Keep functions single-purpose; if a function's description needs "and," split it.
+
+## Error Handling
+
+Messages must answer three questions — what failed, why, and what to try next. Never swallow exceptions silently; prefer explicit over implicit.
+
+## Testing & Verification
+
+- Write tests for new public functions and any logic with branching, state, or side effects. Pure single-path transformations don't need tests.
+- Bug fixes get a regression test that would have caught the bug.
+- Define success criteria before starting multi-step work; loop until verified rather than declaring done on a guess.
 
 ## Behaviour
 
-**Ask before major changes.** Major changes are:
-- Refactoring a function or class interface (rename, reorder, remove parameters)
-- Restructuring a module or moving files
-- Changing behaviour that existing callers depend on
-- Any edit affecting more than ~30 lines outside the immediate task scope
+**Ask before major changes:** interface changes (rename/reorder/remove parameters), restructuring a module or moving files, changing behaviour existing callers depend on, or any edit touching more than ~30 lines outside the task's scope. Minor edits (bug fixes, a new optional parameter, a new function) don't need confirmation.
 
-Minor edits (fixing a bug, adding a parameter with a default, adding a new function) do not require confirmation.
+**Explain decisions** in one sentence: _"Using a dict here instead of a list for O(1) lookup."_
 
-**Explain decisions** — one sentence is enough: "Using a dict here instead of a list for O(1) lookup."
+## Linting
 
-**Error handling:** Messages must answer three questions — what failed, why, and what to try next:
-```python
-# Bad
-raise ValueError("Invalid input")
-
-# Good
-raise ValueError(
-    f"Query string cannot be empty. "
-    f"Pass a non-empty string to fetch_results(). Got: {query!r}"
-)
-```
-
-Prefer explicit over implicit. Never swallow exceptions silently.
-
-## Testing
-Write tests for:
-- All new public functions
-- Any logic with branching (if/else, loops with conditions, exception paths)
-- Bug fixes — add a regression test that would have caught the bug
-
-**Non-trivial = has branching, state, or side effects.** Pure single-path transformations (e.g. `return x * 2`) don't need tests.
-
-Use pytest conventions:
-```python
-def test_fetch_results_raises_on_empty_query():
-    with pytest.raises(ValueError, match="cannot be empty"):
-        fetch_results("")
-
-def test_fetch_results_respects_limit():
-    results = fetch_results("python", limit=3)
-    assert len(results) <= 3
-```
+If a linter or formatter can enforce a rule (naming, import order, formatting), configure the linter — don't restate it here as prose. This file is for judgment calls a linter can't make.
 
 ## Tool Preferences
-Always use dedicated tools over Bash equivalents:
-| Task | Use | Not |
-|------|-----|-----|
-| Read a file | `Read` | `cat`, `head`, `tail` |
-| Search content | `Grep` | `grep`, `rg` |
-| Find files | `Glob` | `find`, `ls` |
-| Edit a file | `Edit` | `sed`, `awk` |
-| Create a file | `Write` | `echo >`, heredoc |
 
-Reserve `Bash` for system commands that have no dedicated tool equivalent.
+| Task           | Use     | Not                   |
+| -------------- | ------- | --------------------- |
+| Read a file    | `Read`  | `cat`, `head`, `tail` |
+| Search content | `Grep`  | `grep`, `rg`          |
+| Find files     | `Glob`  | `find`, `ls`          |
+| Edit a file    | `Edit`  | `sed`, `awk`          |
+| Create a file  | `Write` | `echo >`, heredoc     |
 
-## Guardrails
-- Stay within the scope of what was requested — no unsolicited refactoring or cleanup
-- Don't remove existing functionality without explicit confirmation
-- Choose the simplest working solution over a clever one
-- Never skip safety checks (`--no-verify`, `--force` push) without explicit user instruction
-- Don't add error handling, fallbacks, or validation for scenarios that cannot happen
+Reserve Bash for system commands with no dedicated tool equivalent.
+
+## Dependencies
+
+Don't add a new dependency without asking first — name what you'd install and why, then wait for confirmation. Prefer the standard library or a dependency already in the project.

@@ -27,7 +27,7 @@ optional = false
 
 [[components]]
 name = "agent-config"
-description = "AI agent configuration: CLAUDE.md, behavioural rules, memory workflows"
+description = "AI agent configuration: AGENTS.md, behavioural rules, workspace layout"
 repo_path = "components/agent-config"
 requires = []
 context_vars = []
