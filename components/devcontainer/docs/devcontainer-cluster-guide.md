@@ -70,5 +70,4 @@ Full alias reference: `.devcontainer/assets/shell_aliases.zsh`
 
 - **Credentials** — `.kube/` and `.azure/` are bind-mounted from the host. No credentials are stored in the image.
 - **Docker access** — the `docker-outside-of-docker` feature gives the container access to the host Docker daemon. `docker build` runs on the host, not inside the container.
-- **MCP servers** — baked into the image at `/home/vscode/.config/mcp/mcp_servers.json` during the Docker build. To add or change servers, edit `assets/mcp_servers.json` and rebuild the container (`Dev Containers: Rebuild Container`).
 - **Dependency changes** — `uv add <package>` inside the container writes `uv.lock` to the bind-mounted filesystem (visible on the host immediately). If packages change frequently during a DevSpace session, run `uv sync` inside the dev pod manually or add a file-watch hook in `devspace.yaml`.

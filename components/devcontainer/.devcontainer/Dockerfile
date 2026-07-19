@@ -43,14 +43,9 @@ RUN git clone --depth=1 https://github.com/ahmetb/kubectx /opt/kubectx \
     && ln -s /opt/kubectx/kubectx /usr/local/bin/kubectx \
     && ln -s /opt/kubectx/kubens /usr/local/bin/kubens
 
-# 5. MCP server config
-RUN mkdir -p /home/vscode/.config/mcp
-COPY assets/mcp_servers.json /home/vscode/.config/mcp/mcp_servers.json
-RUN chown -R vscode:vscode /home/vscode/.config
-
 USER vscode
 
-# 6. Shell customisation
+# 5. Shell customisation
 COPY assets/shell_aliases.zsh /home/vscode/.shell_aliases.zsh
 RUN echo 'source ~/.shell_aliases.zsh' >> ~/.bashrc \
     && echo 'source ~/.shell_aliases.zsh' >> ~/.zshrc \

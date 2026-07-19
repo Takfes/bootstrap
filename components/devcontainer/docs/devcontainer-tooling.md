@@ -408,73 +408,6 @@ All dependencies should be declared in `pyproject.toml`. The `postCreateCommand`
 
 ---
 
-## MCP Servers
-
-AI-assisted development tools that run locally in the container and provide domain-specific context to AI assistants.
-
-### kubernetes-mcp
-
-**Purpose:** Read-only Kubernetes cluster introspection  
-**Installed via:** Direct binary (Go-based implementation)
-
-Exposes Kubernetes cluster state as an MCP server. Any AI tool configured to use it can query pods, deployments, services, logs, resource status — all without leaving the editor.
-
-**Configuration:** Declared in `assets/mcp_servers.json`
-
-**Docs:** https://github.com/containers/kubernetes-mcp-server
-
-**Security note:** Read-only by design. Use a service account with minimal permissions:
-```bash
-kubectl create serviceaccount mcp-reader
-kubectl create clusterrolebinding mcp-reader --clusterrole=view --serviceaccount=default:mcp-reader
-```
-
-### context7
-
-**Purpose:** Fetch up-to-date documentation for libraries, frameworks, and APIs  
-**Installed via:** `npx` (on-demand, requires Node.js)  
-**Transport:** stdio
-
-Queries documentation without your AI assistant's knowledge cutoff. Ask Claude "How do I use the latest React hooks?" and it fetches current React docs automatically.
-
-**Docs:** https://github.com/upstash/context7
-
-### playwright
-
-**Purpose:** Web automation and browser control  
-**Installed via:** `npx` (on-demand, requires Node.js)  
-**Transport:** stdio
-
-Enables AI tools to control a browser for web scraping, form filling, testing.
-
-**Docs:** https://playwright.dev/
-
-### sequential-thinking
-
-**Purpose:** Step-by-step reasoning scaffold for complex tasks  
-**Installed via:** `npx` (on-demand)  
-**Transport:** stdio
-
-Guides AI assistants through multi-step problems with explicit reasoning chains.
-
-**Docs:** https://github.com/modelcontextprotocol/servers/tree/main/src/sequentialthinking
-
-### Tavily (Remote MCP)
-
-**Purpose:** Real-time web search  
-**Transport:** HTTP (remote)  
-**Requires:** `TAVILY_API_KEY` environment variable
-
-Provides web search capability to AI tools within the container. Configure your API key:
-
-```bash
-export TAVILY_API_KEY="your-key-here"
-```
-
-**Docs:** https://tavily.com/
-
----
-
 ## DevContainer Features
 
 Special capabilities and integrations provided by the DevContainers feature system.
@@ -492,11 +425,9 @@ Mounts `/var/run/docker.sock` from the host into the container. This lets `docke
 
 ### Node.js LTS
 
-**Purpose:** JavaScript runtime for MCP servers and build tools  
+**Purpose:** JavaScript runtime for `npx`-based CLIs and build tooling  
 **Installed via:** `devcontainers/node` feature  
 **Version:** Latest LTS
-
-Used for running MCP servers via `npx` (context7, playwright, sequential-thinking).
 
 ```bash
 node --version
@@ -540,13 +471,7 @@ Configuration files that get injected into the container at build time. Located 
 
 Shell aliases for common operations. Sourced into `.bashrc` and `.zshrc` during container build. Covers Kubernetes, DevSpace, Docker, Git, Python, and shell utilities. See inline comments for usage.
 
-### mcp_servers.json
-
-MCP server definitions. Tells Claude Code and other AI tools which MCP servers are available and how to reach them. Copied into `/home/vscode/.config/mcp/` during image build.
-
-### settings.json
-
-VSCode workspace settings. Contains Python formatter config, Ruff integration, Jupyter settings, and MCP discovery preferences. Installed as `.vscode/settings.json` in the bootstrapped project.
+Note: `.vscode/settings.json` and `.vscode/extensions.json` are **not** build-time assets — they're static files at the component root, installed directly into the project by the bootstrap CLI (same as every other component file), independent of the Docker build.
 
 ---
 
@@ -560,6 +485,3 @@ A: Edit `.devcontainer/Dockerfile`, add a `RUN apt-get install` or download line
 
 **Q: Can I use the DevContainer with Jupyter?**  
 A: Yes. Install Jupyter in `pyproject.toml` dependencies, then `uv run jupyter notebook`. VSCode will detect the server and offer to open it in the browser locally.
-
-**Q: How do I update MCP servers?**  
-A: If they're npm-based (context7, playwright), `npx` automatically uses the latest. For binary-based servers, update the Dockerfile and rebuild.

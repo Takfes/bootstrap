@@ -59,7 +59,7 @@ optional = true
 
 [[components]]
 name = "devcontainer"
-description = "VSCode DevContainer: reproducible environment with Python, Kubernetes tools (kubectl, k9s, devspace, mirrord), MCP servers, and pre-configured shell aliases"
+description = "VSCode DevContainer: reproducible environment with Python, Kubernetes tools (kubectl, k9s, devspace, mirrord), and pre-configured shell aliases"
 repo_path = "components/devcontainer"
 requires = []
 context_vars = []
