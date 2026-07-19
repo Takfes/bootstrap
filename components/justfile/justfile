@@ -11,9 +11,10 @@ default:
 
 # ── Setup & Environment ──────────────────────────────────────────────────────────────
 
-# Install all dependencies
+# Install all dependencies and pre-commit hooks
 install:
 	uv sync --all-extras --dev
+	uv run pre-commit install --hook-type pre-commit --hook-type pre-push --hook-type commit-msg
 
 # Upgrade all dependencies to their latest allowed versions
 update:
@@ -24,38 +25,38 @@ lock:
 	uv lock
 
 # Show Python version, venv path, and installed packages
-env:
+venv:
 	@uv run python --version
 	@uv run python -c "import sys; print('Virtual env path:', sys.prefix)"
 	@echo "Installed packages:"
 	@uv run pip list
 
 # Reset the virtual environment — delete .venv and reinstall everything
-reset-env:
+reset-venv:
 	#!/usr/bin/env sh
 	printf "This will delete .venv and reinstall. Are you sure? [y/N] "
 	read ans
 	case "$ans" in
-	    [yY]*) rm -rf .venv && uv sync --all-extras --dev && pre-commit install --hook-type pre-commit --hook-type pre-push --hook-type commit-msg ;;
+	    [yY]*) rm -rf .venv && uv sync --all-extras --dev && uv run pre-commit install --hook-type pre-commit --hook-type pre-push --hook-type commit-msg ;;
 	    *) echo "Aborted." ;;
 	esac
 
-# Remove build artefacts and cache directories
-clean:
-	rm -rf dist/ build/ htmlcov/ .coverage coverage.xml .pytest_cache .mypy_cache .ruff_cache
+# Remove cache and temporary files (requires clean-cache-files hook in .pre-commit-config.yaml)
+clean-cache:
+	uv run pre-commit run clean-cache-files
 
-# ── Run ────────────────────────────────────────────────────────────────────────────
-
-# Run the project (pass extra args after --)
-# BOOTSTRAP TEMPLATE: {{package_name}} is replaced by the bootstrap CLI before first use.
-run *args:
-	uv run python -m {{package_name}} {{args}}
+# Remove all generated artefacts (.venv, dist, caches, coverage)
+clean: clean-build
+	rm -rf .venv htmlcov/ .coverage coverage.xml .mypy_cache .pytest_cache .ruff_cache __pycache__
 
 # ── Code Quality ───────────────────────────────────────────────────────────────
 
 # Lint (check only, no fixes)
-lint:
+ruff-check:
 	uv run ruff check src/ tests/
+
+# Format check (no fixes)
+ruff-format:
 	uv run ruff format --check src/ tests/
 
 # Fix lint issues (auto-fix)
@@ -66,13 +67,45 @@ fix:
 # Alias: format code (same as fix)
 format: fix
 
-# Type check
-typecheck:
-	uv run mypy src/
+# Check docstring coverage
+interrogate:
+	uv run interrogate src/
 
 # Check for unused/missing dependencies
-deps:
+deptry:
 	uv run deptry .
+
+# Type check
+typecheck:
+	uv run mypy
+
+# Run all Python linting and analysis checks
+lint: ruff-check ruff-format interrogate deptry
+
+# ── Security & Validation ────────────────────────────────────────────────────────
+
+# Scan for hardcoded secrets (requires gitleaks hook in .pre-commit-config.yaml)
+gitleaks:
+	uv run pre-commit run gitleaks
+
+# Run all file validation checks (requires hooks in .pre-commit-config.yaml)
+file-checks:
+	uv run pre-commit run check-case-conflict
+	uv run pre-commit run check-merge-conflict
+	uv run pre-commit run end-of-file-fixer
+	uv run pre-commit run trailing-whitespace
+	uv run pre-commit run check-added-large-files
+	uv run pre-commit run mixed-line-ending
+	uv run pre-commit run check-json
+	uv run pre-commit run pretty-format-json
+	uv run pre-commit run check-toml
+	uv run pre-commit run check-yaml
+	uv run pre-commit run check-xml
+	uv run pre-commit run check-executables-have-shebangs
+	uv run pre-commit run check-shebang-scripts-are-executable
+
+# Run all validation and security checks
+validate: file-checks gitleaks clean-cache
 
 # ── Testing ───────────────────────────────────────────────────────────────────────────
 
@@ -82,33 +115,49 @@ test:
 
 # Run tests with coverage report
 test-cov:
-	uv run pytest --cov --cov-report=html
+	uv run pytest --cov --cov-report=term-missing --cov-report=html
 	@echo "Coverage report: htmlcov/index.html"
 
 # ── Pre-commit & Hooks ────────────────────────────────────────────────────────────
 
-# Install pre-commit hooks for all hook stages, then validate current state
-hooks:
-	pre-commit install --hook-type pre-commit --hook-type pre-push --hook-type commit-msg
-	pre-commit run --all-files
+# Run pre-commit hooks on currently staged files
+pre-commit-staged:
+	uv run pre-commit run
 
-# Run pre-commit on all files
-pre-commit:
-	pre-commit run --all-files
+# Run pre-commit hooks on all files in the repo
+pre-commit-all:
+	uv run pre-commit run --all-files
+
+# Run all hooks consolidated (lint + validate)
+hooks: lint validate
 
 # ── Quality Gates ───────────────────────────────────────────────────────────────────────
 
-# Run all checks (lint + typecheck + tests + deps) — full pre-PR validation
-check: lint typecheck test deps
+# Full quality gate: lock check + pre-commit (all files) + mypy + tests
+check: test
+	uv lock --locked
+	uv run pre-commit run --all-files
+	uv run mypy
 
 # Run exactly what CI runs (initially identical to check; diverge as needed)
-ci: lint typecheck test deps
+ci: check
 
 # ── Build ─────────────────────────────────────────────────────────────────────────────
 
+# Remove build artefacts (dist/, build/)
+clean-build:
+	rm -rf dist/ build/
+
 # Build the package (wheel + sdist)
-build:
+build: clean-build
 	uv build
+
+# ── Run ────────────────────────────────────────────────────────────────────────────
+
+# Run the project (pass extra args after --)
+# BOOTSTRAP TEMPLATE: {{package_name}} is replaced by the bootstrap CLI before first use.
+run *args:
+	uv run python -m {{package_name}} {{args}}
 
 # ── Docs ──────────────────────────────────────────────────────────────────────────────
 

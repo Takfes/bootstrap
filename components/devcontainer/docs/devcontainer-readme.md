@@ -90,7 +90,6 @@ Think of it as the "contract between VSCode and Docker." The Dockerfile is the i
 | **CLI & Shell** | Command-line utilities, file handling, productivity | `make`, `just`, `fzf`, `jq`, `yq`, `ripgrep`, `lazygit` | See [devcontainer-tooling.md → CLI & Shell](./devcontainer-tooling.md#cli--shell-utilities) |
 | **Kubernetes** | Cluster access, workload management, debugging | `kubectl`, `helm`, `k9s`, `devspace`, `mirrord`, `stern` | See [devcontainer-tooling.md → Kubernetes](./devcontainer-tooling.md#kubernetes-tools) |
 | **Python** | Package management, virtual environments, execution | `uv` (package manager), Python 3.11, `pip` | See [devcontainer-tooling.md → Python](./devcontainer-tooling.md#python-tools) |
-| **MCP Servers** | AI-assisted development, cluster queries, documentation | `context7`, `playwright`, `kubernetes-mcp`, `azure-devops-mcp` | See [devcontainer-tooling.md → MCP Servers](./devcontainer-tooling.md#mcp-servers) |
 | **DevContainer Features** | Container capabilities, integrations | Docker socket mounting, Azure CLI, Node.js LTS | See [devcontainer-tooling.md → DevContainer Features](./devcontainer-tooling.md#devcontainer-features) |
 
 For detailed tool descriptions, installation notes, and usage patterns, see [devcontainer-tooling.md](./devcontainer-tooling.md).
@@ -108,23 +107,10 @@ Files in `.devcontainer/assets/` are copied into the container during the build 
 ├── Dockerfile              # Build instructions
 ├── devcontainer.json       # VSCode/container config
 └── assets/                 # Files injected into container at build time
-    ├── shell_aliases.zsh   # Shell aliases (k=kubectl, d=devspace, etc.)
-    ├── mcp_servers.json    # MCP server definitions
-    └── settings.json       # VSCode workspace settings (.vscode/settings.json)
+    └── shell_aliases.zsh   # Shell aliases (k=kubectl, d=devspace, etc.)
 ```
 
-Each file is referenced in the Dockerfile via COPY instructions and positioned where it needs to be at runtime.
-
-### MCP Servers
-
-MCP servers enable AI tools (like Claude) to query your Kubernetes cluster, Azure resources, and documentation without leaving the editor. The `assets/mcp_servers.json` defines which servers are available:
-
-- **kubernetes-mcp** — read-only access to cluster (pod status, logs, resource info)
-- **azure-devops-mcp** — query pipelines, work items, repositories
-- **context7** — fetch current documentation for libraries and frameworks
-- **playwright** — web browsing and automation
-
-See [devcontainer-tooling.md → MCP Servers](./devcontainer-tooling.md#mcp-servers) for details.
+`shell_aliases.zsh` is referenced in the Dockerfile via a COPY instruction and positioned where it needs to be at runtime. `.vscode/settings.json` and `.vscode/extensions.json` are separate, static files installed straight into the project root by the bootstrap CLI — not part of the Docker build.
 
 ### Shell Aliases & Customization
 

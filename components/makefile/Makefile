@@ -38,25 +38,10 @@ clean-cache: ## Remove cache and temporary files (requires clean-cache-files hoo
 	@echo "Running cache cleanup"
 	@uv run pre-commit run clean-cache-files
 
-.PHONY: clean-build
-clean-build: ## Remove build artefacts (dist/)
-	@echo "Removing build artefacts"
-	@rm -rf dist/
-
 .PHONY: clean
 clean: clean-build ## Remove all generated artefacts (.venv, dist, caches, coverage)
 	@rm -rf .venv htmlcov .coverage .mypy_cache .pytest_cache .ruff_cache __pycache__
 	@echo "Workspace cleaned"
-
-# ── Run ──────────────────────────────────────────────────────────────────────
-
-# Set PACKAGE_NAME at the top of your Makefile or pass it on the command line:
-#   make run PACKAGE_NAME=myapp
-PACKAGE_NAME ?= $(shell basename $(CURDIR) | tr - _)
-
-.PHONY: run
-run: ## Run the project (override PACKAGE_NAME as needed)
-	@uv run python -m $(PACKAGE_NAME)
 
 # ── Code Quality ─────────────────────────────────────────────────────────────
 
@@ -164,10 +149,25 @@ check: test ## Run all code quality tools (tests + lock check + pre-commit + myp
 
 # ── Build ─────────────────────────────────────────────────────────────────────
 
+.PHONY: clean-build
+clean-build: ## Remove build artefacts (dist/)
+	@echo "Removing build artefacts"
+	@rm -rf dist/
+
 .PHONY: build
 build: clean-build ## Build wheel and sdist
 	@echo "Building package"
 	@uv build
+
+# ── Run ──────────────────────────────────────────────────────────────────────
+
+# Set PACKAGE_NAME at the top of your Makefile or pass it on the command line:
+#   make run PACKAGE_NAME=myapp
+PACKAGE_NAME ?= $(shell basename $(CURDIR) | tr - _)
+
+.PHONY: run
+run: ## Run the project (override PACKAGE_NAME as needed)
+	@uv run python -m $(PACKAGE_NAME)
 
 # ── Docs ──────────────────────────────────────────────────────────────────────
 
