@@ -69,7 +69,7 @@ format: fix
 
 # Check docstring coverage
 interrogate:
-	uv run interrogate src/
+	uv run interrogate src/ tests/
 
 # Check for unused/missing dependencies
 deptry:
