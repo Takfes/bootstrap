@@ -64,7 +64,7 @@ fix: ## Auto-fix lint issues (ruff check --fix + ruff format)
 .PHONY: interrogate
 interrogate: ## Check docstring coverage
 	@echo "Running interrogate"
-	@uv run interrogate src/
+	@uv run interrogate src/ tests/
 
 .PHONY: deptry
 deptry: ## Analyse dependencies for unused/missing packages
