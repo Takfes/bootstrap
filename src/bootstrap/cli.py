@@ -57,17 +57,23 @@ def _collect_context(
 
     # Always derived from the project name — never gated behind component selection.
     ctx["project_name"] = project_name
-    # Distribution name (PyPI/repo) vs. import name are independent concepts
-    # (e.g. `Pillow` installs, `PIL` imports) — prompted separately so they
-    # can diverge, with today's derivation as the default.
-    default_package_name = project_name.lower().replace("-", "_").replace(" ", "_")
-    ctx["package_name"] = _ask("Python package/import name", default=default_package_name)
     ctx["repo_name"] = project_name.lower().replace("_", "-").replace(" ", "-")
     ctx["year"] = str(date.today().year)
     # Not prompted — hardcoded default to remove signup friction.
     ctx["agent_name"] = "Claude"
 
     ask_all = needed is None
+
+    # Distribution name (PyPI/repo) vs. import name are independent concepts
+    # (e.g. `Pillow` installs, `PIL` imports) — prompted separately so they
+    # can diverge, with today's derivation as the default. Only asked when a
+    # selected component's files actually consume {{package_name}}; otherwise
+    # the derived default is used silently.
+    default_package_name = project_name.lower().replace("-", "_").replace(" ", "_")
+    if ask_all or "package_name" in needed:
+        ctx["package_name"] = _ask("Python package/import name", default=default_package_name)
+    else:
+        ctx["package_name"] = default_package_name
 
     if ask_all or "author" in needed:
         ctx["author"] = _ask("Your name", default="Your Name")
