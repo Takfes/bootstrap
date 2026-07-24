@@ -4,8 +4,11 @@
 #
 # context_vars declares which interactively-prompted template variables a
 # component's files reference (e.g. {{license_type}}, {{agent_name}}). It does
-# NOT include project_name/package_name/repo_name/year, which are always
-# available with a derived value and never gated behind component selection.
+# NOT include project_name/repo_name/year, which are always available with a
+# derived value and never gated behind component selection. package_name IS
+# gated like any other var — it's always *available* (derived from
+# project_name as a fallback), but only *prompted* for override when a
+# selected component's files actually consume {{package_name}}.
 # The CLI prompts only for the union of context_vars across selected
 # components — see _needed_context_vars() in src/bootstrap/cli.py.
 
@@ -14,7 +17,7 @@ name = "uv"
 description = "uv dependency management + pyproject.toml with all tool configs (ruff, mypy, deptry, pytest, coverage)"
 repo_path = "components/ultraviolet"
 requires = []
-context_vars = ["author", "author_email", "github_org", "description", "python_version", "license_type", "layout"]
+context_vars = ["author", "author_email", "github_org", "description", "python_version", "license_type", "layout", "package_name"]
 optional = false
 
 [[components]]
@@ -46,7 +49,7 @@ name = "justfile"
 description = "just task runner — cross-platform commands for install, lint, test, build, docs, and more"
 repo_path = "components/justfile"
 requires = []
-context_vars = []
+context_vars = ["package_name"]
 optional = true
 
 [[components]]
@@ -70,5 +73,5 @@ name = "mkdocs"
 description = "MkDocs + Material theme documentation site — dark/light mode, mkdocstrings API docs, git-revision-date"
 repo_path = "components/mkdocs"
 requires = ["uv"]
-context_vars = ["author", "github_org", "description", "layout"]
+context_vars = ["author", "github_org", "description", "layout", "package_name"]
 optional = true
